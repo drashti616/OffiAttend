@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    .employee-id {
+
+      font-family: 'Inter', monospace;
+
+      font-weight: 600;
+
+      color: var(--color-text-primary);
+
+      background: var(--color-surface);
+
+      padding: 4px 8px;
+
+      border-radius: var(--radius-sm);
+
+      border: 1px solid var(--color-border);
+
+      font-size: var(--font-size-sm);
+
+      display: inline-block;
+
+    }
+  </style>
+
+  <title>Admin Dashboard • OffiAttend</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+</head>
+
+
+
+<body data-requires-auth="true">
+
+  <!-- Mobile Menu Toggle -->
+
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+
+    </svg>
+
+  </button>
+
+  <div class="mobile-overlay"></div>
+
+
+
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+
+    <div id="sidebar-container"></div>
+
+
+
+    <!-- Main Content -->
+
+    <main class="main-content">
+
+      <div class="page">
+
+        <div class="container">
+
+          <div class="page-header">
+
+            <div>
+
+              <h1 class="page-title">Admin Dashboard</h1>
+
+              <p class="page-subtitle">Overview of today's attendance and statistics</p>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- KPI Cards -->
+
+          <div class="grid grid-4 animate-fade-in-up">
+
+            <div class="gradient-card" style="background: var(--gradient-primary);">
+
+              <div style="font-size: var(--font-size-sm); opacity: 0.9; margin-bottom: var(--space-sm);">Total Employees
+              </div>
+
+              <div style="font-size: var(--font-size-4xl); font-weight: 800;" data-kpi-total>0</div>
+
+            </div>
+
+            <div class="gradient-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+
+              <div
+                style="font-size: var(--font-size-sm); opacity: 0.9; margin-bottom: var(--space-sm); color: white; font-weight: 600;">
+                Present Today </div>
+
+              <div style="font-size: var(--font-size-4xl); font-weight: 800; color: white;" data-kpi-present>0</div>
+
+            </div>
+
+            <div class="gradient-card" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+
+              <div
+                style="font-size: var(--font-size-sm); opacity: 0.9; margin-bottom: var(--space-sm); color: white; font-weight: 600;">
+                Absent Today</div>
+
+              <div style="font-size: var(--font-size-4xl); font-weight: 800; color: white;" data-kpi-absent>0</div>
+
+            </div>
+
+            <div class="gradient-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+
+              <div
+                style="font-size: var(--font-size-sm); opacity: 0.9; margin-bottom: var(--space-sm); color: white; font-weight: 600;">
+                Leave Today</div>
+
+              <div style="font-size: var(--font-size-4xl); font-weight: 800; color: white;" data-kpi-leave>0</div>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- Dynamic Attendance Table -->
+
+          <div class="card fade-in">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title" data-dynamic-date-title>Today's Attendance</h2>
+                <div class="card-subtitle" data-dashboard-date>—</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Employee ID</th>
+                      <th>Entry Time</th>
+                      <th>Exit Time</th>
+                      <th>Status</th>
+                      <th>Leave Status</th>
+                      <th>View</th>
+                    </tr>
+                  </thead>
+                  <tbody data-admin-attendance>
+                    <tr>
+                      <td colspan="5" class="muted" style="text-align: center; padding: var(--space-xl);">Loading…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+
+  <script src="js/app.js"></script>
+  <script src="js/responsive.js"></script>
+
+  <script src="js/pages.js"></script>
+
+
+
+  <!-- Global helpers needed by inline onclick handlers -->
+
+  <script>
+
+    function formatTime(timeStr) {
+
+      if (!timeStr || timeStr === "—") return "—";
+
+      try {
+
+        const d = new Date(timeStr);
+
+        // Check if date is valid
+
+        if (isNaN(d.getTime())) {
+
+          console.log('Invalid date format:', timeStr);
+
+          return timeStr; // Return original string if invalid
+
+        }
+
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+
+      } catch (e) {
+
+        console.log('Error formatting time:', e, 'for:', timeStr);
+
+        return timeStr; // Return original string if error
+
+      }
+
+    }
+
+
+
+    function showAttendanceDetails(date, empId) {
+
+      const detailRow = document.getElementById(`detail_row_${empId}_${date}`);
+
+      if (!detailRow) return;
+
+
+
+      // Close all other open rows
+
+      document.querySelectorAll('[id^="detail_row_"]').forEach(row => {
+
+        if (row.id !== `detail_row_${empId}_${date}`) row.style.display = 'none';
+
+      });
+
+
+
+      // Toggle this row
+
+      if (detailRow.style.display === 'none' || detailRow.style.display === '') {
+
+        detailRow.style.display = 'table-row';
+
+        loadScanLogs(date, empId);
+
+      } else {
+
+        detailRow.style.display = 'none';
+
+      }
+
+    }
+
+
+
+    function loadScanLogs(date, empId) {
+      const logsContainer = document.getElementById(`scan_logs_${empId}_${date}`);
+      if (!logsContainer) return;
+
+      logsContainer.innerHTML = 'Loading scan logs...';
+
+      fetch(`${window.location.origin}/api/attendance/logs?emp_id=${empId}&date=${date}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            const logs = data.logs || [];
+            
+            if (logs.length === 0) {
+              logsContainer.innerHTML = '<p style="color:#999;">No scan logs found for this date.</p>';
+              return;
+            }
+            
+            const entryLogs = logs.filter(l => l.action === 'ENTRY');
+            const exitLogs = logs.filter(l => l.action === 'EXIT');
+
+            logsContainer.innerHTML = `
+              <div style="display:flex;gap:20px;">
+                <div style="flex:1;">
+                  <h5 style="color:#16a34a;margin-bottom:10px;">📍 Entry Times</h5>
+                  ${entryLogs.length > 0
+                ? entryLogs.map(l => `<div style="padding:10px;margin-bottom:8px;background:rgba(34,197,94,0.15);border-left:3px solid #16a34a;border-radius:4px;font-weight:500;">${l.created_at || '—'}</div>`).join('')
+                : '<p style="color:#999;padding:10px;">No entry scans</p>'}
+                </div>
+                <div style="flex:1;">
+                  <h5 style="color:#dc2626;margin-bottom:10px;">📤 Exit Times</h5>
+                  ${exitLogs.length > 0
+                ? exitLogs.map(l => `<div style="padding:10px;margin-bottom:8px;background:rgba(239,68,68,0.15);border-left:3px solid #dc2626;border-radius:4px;font-weight:500;">${l.created_at || '—'}</div>`).join('')
+                : '<p style="color:#999;padding:10px;">No exit scans</p>'}
+                </div>
+              </div>`;
+          } else {
+            logsContainer.innerHTML = `<p style="color:#dc2626;">Error: ${data.error || 'Unable to load details'}</p>`;
+          }
+        })
+        .catch(err => {
+          logsContainer.innerHTML = `<p>Error loading scan logs: ${err.message}</p>`;
+        });
+    }
+
+
+
+    window.formatTime = formatTime;
+
+    window.showAttendanceDetails = showAttendanceDetails;
+
+    window.loadScanLogs = loadScanLogs;
+
+  </script>
+
+
+
+  <!-- Main dashboard logic -->
+
+  <script>
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+      if (!window.OfficeApp) return;
+
+
+
+      const API_BASE_URL = window.location.origin + '/api';
+
+      const user = window.OfficeApp.currentUser();
+
+      const isAdmin = (user?.role || "").toLowerCase() === "admin";
+
+
+
+      if (!isAdmin) {
+
+        window.location.href = "employee_attendance.html";
+
+        return;
+
+      }
+
+
+
+      // ── DOM refs (declared ONCE) ──────────────────────────────────────────
+
+      const reportTbody = document.querySelector("tbody[data-admin-attendance]");
+
+      const filterEmp = document.getElementById("filter_emp");
+
+      const exportBtn = document.querySelector("[data-export-csv]");
+
+      const totalEl = document.querySelector('[data-kpi-total]');
+
+      const presentEl = document.querySelector('[data-kpi-present]');
+
+      const absentEl = document.querySelector('[data-kpi-absent]');
+
+      const leaveEl = document.querySelector('[data-kpi-leave]');
+
+
+
+      // ── Initialize KPI cards to 0 immediately on page load ─────────────────
+
+      if (totalEl) { totalEl.textContent = '0'; totalEl.dataset.value = '0'; }
+
+      if (presentEl) { presentEl.textContent = '0'; presentEl.dataset.value = '0'; }
+
+      if (absentEl) { absentEl.textContent = '0'; absentEl.dataset.value = '0'; }
+
+      if (leaveEl) { leaveEl.textContent = '0'; leaveEl.dataset.value = '0'; }
+
+
+
+      // ── KPI helpers ───────────────────────────────────────────────────────
+
+      function resetKPICards() {
+
+        if (totalEl) totalEl.textContent = '0';
+
+        if (presentEl) presentEl.textContent = '0';
+
+        if (absentEl) absentEl.textContent = '0';
+
+        if (leaveEl) leaveEl.textContent = '0';
+
+      }
+
+
+
+      // totalCount comes from the FULL employee list — not attendance array
+
+      function updateKPICards(totalCount, attendance) {
+
+        if (!attendance || !Array.isArray(attendance)) {
+
+          console.error('Invalid attendance data passed to updateKPICards');
+
+          return;
+
+        }
+
+
+
+        let presentCount = 0;
+
+        let absentCount = 0;
+
+        let leaveCount = 0;
+
+
+
+        attendance.forEach(record => {
+
+          let status = '';
+
+
+
+          if (record.status) {
+
+            status = String(record.status).toLowerCase();
+
+          } else if (record.is_late === true) {
+
+            status = 'late';
+
+          } else if (record.in_time || record.first_entry) {
+
+            status = 'present';
+
+          } else {
+
+            status = 'absent';
+
+          }
+
+
+
+          if (status === 'present' || status === 'late') presentCount++;
+
+          if (status === 'absent') absentCount++;
+
+          if (status === 'leave') leaveCount++;
+
+        });
+
+
+
+        // Update KPI cards with animation
+
+        if (totalEl) { totalEl.textContent = totalCount; totalEl.dataset.value = totalCount; }
+
+        if (presentEl) { presentEl.textContent = presentCount; presentEl.dataset.value = presentCount; }
+
+        if (absentEl) { absentEl.textContent = absentCount; absentEl.dataset.value = absentCount; }
+
+        if (leaveEl) { leaveEl.textContent = leaveCount; leaveEl.dataset.value = leaveCount; }
+
+      }
+
+
+
+      // ── Employee fetching ─────────────────────────────────────────────────
+
+      async function getAllEmployees() {
+
+        try {
+
+          const res = await fetch(`${API_BASE_URL}/employees`);
+
+          const data = await res.json();
+
+          // Support both { employees: [...] } and plain array responses
+
+          return Array.isArray(data) ? data : (data.employees || []);
+
+        } catch (e) {
+
+          console.error('Failed to fetch employees:', e);
+
+          return [];
+
+        }
+
+      }
+
+
+
+      // ── Build absent records for employees with NO attendance today ────────
+      // Check for approved leaves and mark as Leave instead of Absent
+      async function buildAbsentRecords(allEmployees, existingAttendance, date) {
+        const attendedIds = new Set(existingAttendance.map(r => r.emp_id));
+        const targetDate = new Date(date);
+
+        // Fetch all approved leaves for the target date
+        let approvedLeaves = {};
+        try {
+          const leaveRes = await fetch(`${API_BASE_URL}/leaves`);
+          const leaveData = await leaveRes.json();
+          if (leaveData.success && leaveData.leaves) {
+            leaveData.leaves.forEach(leave => {
+              if (leave.status === 'Approved') {
+                const fromDate = new Date(leave.from_date);
+                const toDate = new Date(leave.to_date);
+                const checkDate = new Date(date);
+                if (checkDate >= fromDate && checkDate <= toDate) {
+                  approvedLeaves[leave.emp_id] = true;
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Failed to fetch leaves:', e);
+        }
+
+        // Filter out employees whose joining_date is after the target date
+        return allEmployees
+          .filter(emp => {
+            if (attendedIds.has(emp.emp_id)) return false;
+
+            // Check joining date - employee should have joined on or before target date
+            if (emp.joining_date) {
+              const joiningDate = new Date(emp.joining_date);
+              if (joiningDate > targetDate) {
+                console.log(`Excluding ${emp.emp_id} - joining date ${emp.joining_date} is after ${date}`);
+                return false;
+              }
+            }
+            return true;
+          })
+          .map(emp => ({
+            emp_id: emp.emp_id,
+            name: emp.full_name || emp.name || '—',
+            att_date: date,
+            status: approvedLeaves[emp.emp_id] ? 'leave' : 'absent',
+
+            in_time: '—',      // ← always dash, never copied from present data
+
+            out_time: '—',      // ← always dash, never copied from present data
+
+            first_entry: '—',
+
+            last_exit: '—',
+
+            is_absent: true,     // flag so we can hide Details button
+
+            leave_status: 'none'    // indicates no approved leave
+
+          }));
+
+      }
+
+
+
+      // ── Date formatter (YYYY-MM-DD → DD-MM-YYYY) ──────────────────────────
+
+      function formatDate(r) {
+
+        const dateStr = r.att_date || r.date || '—';
+
+        if (dateStr === '—') return dateStr;
+
+        try {
+
+          const dt = new Date(dateStr);
+
+          const day = String(dt.getDate()).padStart(2, '0');
+
+          const mon = String(dt.getMonth() + 1).padStart(2, '0');
+
+          return `${day}-${mon}-${dt.getFullYear()}`;
+
+        } catch (e) {
+
+          // Fallback: if already YYYY-MM-DD, swap parts
+
+          const parts = dateStr.split('-');
+
+          if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+          return dateStr;
+
+        }
+
+      }
+
+
+
+      // ── Status badge ──────────────────────────────────────────────────────
+
+      function statusBadge(status) {
+
+        const s = (status || '').toLowerCase();
+
+        if (s === 'leave') return '<span class="badge badge-leave">Leave</span>';
+
+        if (s === 'absent') return '<span class="badge badge-absent">Absent</span>';
+
+        if (s === 'present') return '<span class="badge badge-present">Present</span>';
+
+        if (s === 'late') return '<span class="badge badge-late">Late</span>';
+
+        if (s === 'pending') return '<span class="badge badge-pending">Pending</span>';
+
+        return status || '—';
+
+      }
+
+
+
+      // ── Render table row ──────────────────────────────────────────────────
+
+      function renderRows(attendance) {
+        if (!reportTbody) return;
+
+        if (!attendance || attendance.length === 0) {
+          reportTbody.innerHTML =
+            '<tr><td colspan="6" class="muted">No attendance records found. Mark attendance via face scan or run slot generation.</td></tr>';
+          return;
+        }
+
+        const html = attendance.map(r => {
+          const dateDisplay = formatDate(r);
+          // in_time/out_time arrive as "HH:MM:SS" strings or null — strip seconds
+          const fmtTime = (t) => {
+            if (!t || t === '—' || t === 'None' || t === 'null') return '—';
+            const parts = String(t).split(':');
+            if (parts.length >= 2) return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+            return t;
+          };
+          const inTime = fmtTime(r.in_time || r.first_entry);
+          const outTime = fmtTime(r.out_time || r.last_exit);
+          const empName = r.emp_name || r.name || '';
+
+          // Determine leave status badge
+          const leaveStatus = r.leave_status || 'Not Applied';
+          let leaveBadgeClass = 'badge-pending';
+          if (leaveStatus === 'Approved') {
+            leaveBadgeClass = 'badge-present';
+          } else if (leaveStatus === 'Rejected') {
+            leaveBadgeClass = 'badge-absent';
+          } else if (leaveStatus === 'Pending') {
+            leaveBadgeClass = 'badge-pending';
+          } else if (leaveStatus === 'Not Applied') {
+            leaveBadgeClass = 'badge-pending';
+          }
+
+          const viewButton = `<button class="btn btn-gradient-primary btn-sm" onclick="showAttendanceDetails('${r.att_date}', '${r.emp_id}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              View
+            </button>`;
+
+          const detailExpandRow = `<tr id="detail_row_${r.emp_id}_${r.att_date}" style="display:none;">
+              <td colspan="6" style="padding:0;">
+                <div class="detail-content" style="padding:20px;border-left:4px solid var(--primary-from);background:var(--bg-light);">
+                  <div id="scan_logs_${r.emp_id}_${r.att_date}">Loading details...</div>
+                </div>
+              </td>
+            </tr>`;
+
+          return `<tr>
+              <td><span class="employee-id">${r.emp_id || '—'}</span></td>
+              <td>${inTime}</td>
+              <td>${outTime}</td>
+              <td>${statusBadge(r.status)}</td>
+              <td><span class="badge ${leaveBadgeClass}">${leaveStatus}</span></td>
+              <td>${viewButton}</td>
+            </tr>
+            ${detailExpandRow}`;
+        }).join('');
+
+        reportTbody.innerHTML = html;
+      }
+
+
+
+      let isLoading = false;
+
+      async function loadReport() {
+
+        if (isLoading) {
+
+          console.log('Already loading, skipping...');
+
+          return;
+
+        }
+
+
+
+        isLoading = true;
+
+        resetKPICards();
+
+        reportTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>`;
+
+
+
+        const now = new Date();
+
+        function getLocalDateString(date) {
+
+          const y = date.getFullYear();
+
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+
+          const d = String(date.getDate()).padStart(2, '0');
+
+          return `${y}-${m}-${d}`;
+
+        }
+
+
+
+        // Determine which day to show based on current time
+
+        const currentHour = now.getHours();
+
+        const currentMinute = now.getMinutes();
+
+        const currentTime = currentHour * 60 + currentMinute;
+
+        const cutoffTime = 9 * 60 + 45; // 9:45 AM = 585 minutes
+
+
+
+        let targetDate, targetDateStr;
+
+        if (currentTime < cutoffTime) {
+
+          // Before 9:45 AM - show previous day's attendance
+
+          const yesterday = new Date(now);
+
+          yesterday.setDate(yesterday.getDate() - 1);
+
+          targetDate = yesterday;
+
+          targetDateStr = getLocalDateString(yesterday);
+
+          console.log('Before 9:45 AM - showing previous day:', targetDateStr);
+
+        } else {
+
+          // After 9:45 AM - show current day's attendance
+
+          targetDate = now;
+
+          targetDateStr = getLocalDateString(now);
+
+          console.log('After 9:45 AM - showing current day:', targetDateStr);
+
+        }
+
+
+
+        // Update date display to show which day is being displayed
+
+        const dateLabel = document.querySelector('[data-dashboard-date]');
+
+        if (dateLabel) {
+
+          const dayName = currentTime < cutoffTime ? 'Yesterday' : 'Today';
+
+          dateLabel.textContent = `${dayName} (${targetDateStr}) - Attendance until 9:45 AM`;
+
+        }
+
+
+
+        try {
+
+          console.log('Querying attendance for date:', targetDateStr);
+
+          // Fetch employees and target day's attendance
+          // For TODAY: use /attendance/today to create Pending slots and get updated statuses
+          // For YESTERDAY: use /attendance?date= to just query existing records
+
+          let attendanceUrl;
+          if (currentTime < cutoffTime) {
+            // Before 9:45 AM - showing yesterday, use query-only endpoint
+            attendanceUrl = `${API_BASE_URL}/attendance?date=${targetDateStr}`;
+            console.log('Before 9:45 AM - using query endpoint for yesterday:', attendanceUrl);
+          } else {
+            // After 9:45 AM - showing today, use /today endpoint to create slots and get updated statuses
+            attendanceUrl = `${API_BASE_URL}/attendance/today`;
+            console.log('After 9:45 AM - using /today endpoint for today:', attendanceUrl);
+          }
+
+          const [allEmployees, attendanceRes] = await Promise.all([
+
+            getAllEmployees(),
+
+            fetch(attendanceUrl).then(r => {
+
+              console.log(`Attendance API response status:`, r.status);
+
+              if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+              return r.json();
+
+            }).then(data => {
+
+              console.log(`Attendance API response data:`, data);
+
+              return data;
+
+            })
+
+          ]);
+
+
+
+          // Normalise attendance response
+
+          let attendance = [];
+
+          if (attendanceRes && attendanceRes.success && Array.isArray(attendanceRes.attendance)) {
+
+            attendance = attendanceRes.attendance;
+
+          } else if (Array.isArray(attendanceRes)) {
+
+            attendance = attendanceRes;
+
+          }
+
+
+
+          console.log('Raw attendance data:', attendance.length, 'records');
+
+
+
+          // Build absent records only for non-today dates
+
+          // For today, /attendance/today already creates pending slots for all employees
+
+          const absentRecords = await buildAbsentRecords(allEmployees, attendance, targetDateStr);
+
+          console.log('Built', absentRecords.length, 'absent records');
+
+
+
+          // Merge: present/late records first, then absent records for target day
+
+          const fullAttendance = [...attendance, ...absentRecords];
+
+          console.log('Full attendance:', fullAttendance.length, 'records');
+
+
+
+          // Apply search filter if active
+
+          let filtered = fullAttendance;
+
+          if (filterEmp?.value?.trim()) {
+
+            const q = filterEmp.value.trim().toLowerCase();
+
+            filtered = fullAttendance.filter(r =>
+
+              String(r.emp_id || '').toLowerCase().includes(q) ||
+
+              String(r.name || '').toLowerCase().includes(q) ||
+
+              String(r.status || '').toLowerCase().includes(q) ||
+
+              String(r.att_date || '').toLowerCase().includes(q)
+
+            );
+
+            console.log('Filtered to', filtered.length, 'records');
+
+          }
+
+
+
+          // KPI uses only employees who have joined on or before target date
+
+          const targetDate = new Date(targetDateStr);
+
+          const eligibleEmployees = allEmployees.filter(emp => {
+
+            if (!emp.joining_date) return true; // No joining date = include
+
+            const joiningDate = new Date(emp.joining_date);
+
+            return joiningDate <= targetDate;
+
+          });
+
+          console.log(`Eligible employees for ${targetDateStr}:`, eligibleEmployees.length, 'out of', allEmployees.length);
+
+
+
+          updateKPICards(eligibleEmployees.length, fullAttendance);
+
+
+
+          // Render table
+
+          console.log('About to render', filtered.length, 'rows');
+
+          renderRows(filtered);
+
+          console.log('Render complete');
+
+        } catch (err) {
+
+          console.error('Error loading report:', err);
+
+          reportTbody.innerHTML =
+
+            '<tr><td colspan="5" class="muted" style="color:#b91c1c;">An error occurred while loading. Please try again.</td></tr>';
+
+        } finally {
+
+          isLoading = false;
+
+        }
+
+      }
+
+
+
+      // ── Event listeners ───────────────────────────────────────────────────
+
+      filterEmp?.addEventListener("input", loadReport);
+
+
+
+      exportBtn?.addEventListener("click", () => {
+
+        const header = ["Date", "Emp ID", "Name", "In Time", "Out Time", "Status"];
+
+        const rows = Array.from(document.querySelectorAll("tbody[data-admin-attendance] tr"))
+
+          .map(tr => {
+
+            const tds = tr.querySelectorAll("td");
+
+            if (tds.length < 6) return null;
+
+            return Array.from(tds).map(td => td.textContent.trim());
+
+          })
+
+          .filter(Boolean);
+
+        window.OfficeApp?.downloadCsv?.("admin_attendance_report.csv", [header, ...rows])
+
+          || alert("Export not available");
+
+      });
+
+
+
+      // ── Initial load ──────────────────────────────────────────────────────
+
+      loadReport();
+
+    }); // End DOMContentLoaded
+
+  </script>
+
+</body>
+
+</html>

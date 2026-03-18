@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leave Applications • OffiAttend</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <div class="page">
+        <div class="container">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Leave Applications</h1>
+              <p class="page-subtitle">View and manage all leave requests (Pending, Approved, Rejected)</p>
+            </div>
+          </div>
+
+          <div class="card fade-in">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">All Leave Requests</h2>
+                <div class="card-subtitle">Manage and track employee leave applications</div>
+              </div>
+              <div class="card-actions" style="display: flex; gap: var(--space-sm); align-items: center;">
+                <label class="label" style="margin:0; font-weight:600; color:var(--text-light);">Show</label>
+                <select id="filter-status" class="field" style="width: 150px;">
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Emp ID</th>
+                      <th>From</th>
+                      <th>To</th>
+                      <th>Type</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody data-leaves-admin>
+                    <tr>
+                      <td colspan="7" class="muted">Loading…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Leave Details Modal -->
+  <div class="modal-overlay" id="leaveDetailsModal" style="display:none;">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>Leave Application Details</h3>
+      </div>
+      <div class="modal-body" style="padding: var(--space-xl);">
+        <div style="background: var(--bg-light); padding: var(--space-lg); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Employee ID</label>
+              <div class="detail-value" id="detail-emp-id" style="font-weight: 600; font-size: var(--font-size-base); color: var(--primary-from);">—</div>
+            </div>
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Leave Type</label>
+              <div class="detail-value" id="detail-leave-type" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">From Date</label>
+              <div class="detail-value" id="detail-from-date" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">To Date</label>
+              <div class="detail-value" id="detail-to-date" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Status</label>
+              <div class="detail-value" id="detail-status" style="font-size: var(--font-size-base);">—</div>
+            </div>
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Applied On</label>
+              <div class="detail-value" id="detail-applied-date" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+          </div>
+
+          <div>
+            <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Reason</label>
+            <div class="detail-value" id="detail-reason" style="line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; color: var(--text-dark); font-size: var(--font-size-base);">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: var(--space-lg); display: flex; gap: var(--space-md); justify-content: flex-end;">
+        <button type="button" class="btn btn-gradient-danger" onclick="closeLeaveDetailsModal()">Close</button>
+        <button type="button" class="btn btn-success" id="approveBtn" style="display: none;" onclick="approveLeaveFromModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Approve
+        </button>
+        <button type="button" class="btn btn-danger" id="rejectBtn" style="display: none;" onclick="rejectLeaveFromModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          Reject
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/pages.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const tbody = document.querySelector("tbody[data-leaves-admin]");
+      const filterStatus = document.getElementById("filter-status");
+
+      function load() {
+        fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin + '/api'}/leaves`)
+          .then(r => r.json())
+          .then(d => {
+            if (!d.success || !d.leaves) { tbody.innerHTML = '<tr><td colspan="7" class="muted">No leaves</td></tr>'; return; }
+            let rows = d.leaves;
+            const status = (filterStatus?.value || "").trim();
+            if (status) rows = rows.filter(l => (l.status || "") === status);
+            tbody.innerHTML = rows.map(l => `
+              <tr>
+                <td><strong>${l.emp_id || '—'}</strong></td>
+                <td>${formatDate(l.from_date) || '—'}</td>
+                <td>${formatDate(l.to_date) || '—'}</td>
+                <td>${l.leave_type || '—'}</td>
+                <td>${(l.reason || '—').substring(0, 40)}${(l.reason || '').length > 40 ? '…' : ''}</td>
+                <td>${window.OfficeApp?.fmtBadge?.(l.status) || l.status}</td>
+                <td>
+                  <button class="btn btn-gradient-primary btn-sm" onclick="viewLeaveDetails(${JSON.stringify(l).replace(/"/g, '&quot;')})">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    View Details
+                  </button>
+                </td>
+              </tr>
+            `).join("") || '<tr><td colspan="7" class="muted">No records</td></tr>';
+          })
+          .catch(() => { tbody.innerHTML = '<tr><td colspan="7" class="muted">Connection error</td></tr>'; });
+      }
+
+      filterStatus?.addEventListener("change", load);
+      load();
+    });
+
+    // Leave Details Modal Functions
+    let currentLeaveId = null;
+
+    function viewLeaveDetails(leave) {
+      console.log('Viewing leave details:', leave);
+      currentLeaveId = leave.id;
+
+      // Populate modal with leave data
+      document.getElementById('detail-emp-id').textContent = leave.emp_id || '—';
+      document.getElementById('detail-leave-type').textContent = leave.leave_type || '—';
+      document.getElementById('detail-from-date').textContent = formatDate(leave.from_date) || '—';
+      document.getElementById('detail-to-date').textContent = formatDate(leave.to_date) || '—';
+      document.getElementById('detail-status').innerHTML = window.OfficeApp?.fmtBadge?.(leave.status) || leave.status || '—';
+      document.getElementById('detail-applied-date').textContent = formatDate(leave.created_at) || '—';
+      document.getElementById('detail-reason').textContent = leave.reason || '—';
+
+      // Show/hide approve/reject buttons based on status
+      const approveBtn = document.getElementById('approveBtn');
+      const rejectBtn = document.getElementById('rejectBtn');
+      
+      if ((leave.status || "").toLowerCase() === "pending") {
+        approveBtn.style.display = 'inline-block';
+        rejectBtn.style.display = 'inline-block';
+      } else {
+        approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
+      }
+
+      // Show modal
+      const modal = document.getElementById('leaveDetailsModal');
+      modal.style.display = 'flex';
+      modal.classList.add('show');
+    }
+
+    async function approveLeaveFromModal() {
+      if (!currentLeaveId) return;
+      
+      const approveBtn = document.getElementById('approveBtn');
+      const originalHTML = approveBtn.innerHTML;
+      approveBtn.disabled = true;
+      approveBtn.innerHTML = '<span style="display: flex; align-items: center; gap:4px;">Processing...</span>';
+
+      try {
+        const response = await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin + '/api'}/leaves/${currentLeaveId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Approved', reviewed_by: 'admin' })
+        });
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Backend server error');
+        }
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          approveBtn.innerHTML = '<span style="display: flex; align-items: center; gap:4px;">✓ Approved</span>';
+          setTimeout(() => {
+            closeLeaveDetailsModal();
+            location.reload();
+          }, 1000);
+        } else {
+          throw new Error(result.message || 'Approval failed');
+        }
+      } catch (error) {
+        console.error('Approve error:', error);
+        approveBtn.innerHTML = originalHTML;
+        approveBtn.disabled = false;
+        alert('Failed to approve: ' + error.message);
+      }
+    }
+
+    async function rejectLeaveFromModal() {
+      if (!currentLeaveId) return;
+      
+      const rejectBtn = document.getElementById('rejectBtn');
+      const originalHTML = rejectBtn.innerHTML;
+      rejectBtn.disabled = true;
+      rejectBtn.innerHTML = '<span style="display: flex; align-items: center; gap:4px;">Processing...</span>';
+
+      try {
+        const response = await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin + '/api'}/leaves/${currentLeaveId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Rejected', reviewed_by: 'admin' })
+        });
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Backend server error');
+        }
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          rejectBtn.innerHTML = '<span style="display: flex; align-items: center; gap:4px;">✗ Rejected</span>';
+          setTimeout(() => {
+            closeLeaveDetailsModal();
+            location.reload();
+          }, 1000);
+        } else {
+          throw new Error(result.message || 'Rejection failed');
+        }
+      } catch (error) {
+        console.error('Reject error:', error);
+        rejectBtn.innerHTML = originalHTML;
+        rejectBtn.disabled = false;
+        alert('Failed to reject: ' + error.message);
+      }
+    }
+
+    function closeLeaveDetailsModal() {
+      const modal = document.getElementById('leaveDetailsModal');
+      modal.style.display = 'none';
+      modal.classList.remove('show');
+      currentLeaveId = null;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+
+      try {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`; // dd-mm-yyyy format
+      } catch (e) {
+        return dateString;
+      }
+    }
+
+    // Close modal when clicking overlay
+    document.addEventListener('click', function (event) {
+      const modal = document.getElementById('leaveDetailsModal');
+      if (event.target === modal) {
+        closeLeaveDetailsModal();
+      }
+    });
+  </script>
+</body>
+
+</html>

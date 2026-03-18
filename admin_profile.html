@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Profile • OffiAttend</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+        }
+        .admin-details-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .admin-photo-section {
+            padding: 30px;
+            text-align: center;
+        }
+        .admin-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #3b82f6;
+            margin-bottom: 15px;
+        }
+        .no-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #94a3b8;
+            border: 4px solid #e2e8f0;
+            margin-bottom: 15px;
+        }
+        .admin-info {
+            padding: 30px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #64748b;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 20px;
+        }
+        .back-link:hover {
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar (Loaded dynamically from sidebar.html) -->
+        <div id="sidebar-container"></div>
+        
+        <main class="main-content">
+            <div class="page">
+                <div class="container">
+                    <div class="admin-details-container">
+                        <div class="admin-header">
+                            <h1 id="admin-name-header">Admin Profile</h1>
+                        </div>
+                        <div id="admin-content" style="display: none;">
+                            <div class="admin-info">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Username</div>
+                                        <div class="info-value" id="admin-username"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Email</div>
+                                        <div class="info-value" id="admin-email"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Role</div>
+                                        <div class="info-value" id="admin-role"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Status</div>
+                                        <div class="info-value" id="admin-status"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Last Login</div>
+                                        <div class="info-value" id="admin-last-login"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/pages.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        // Load admin details
+        async function loadAdminDetails() {
+            try {
+                console.log('Loading admin details...');
+                
+                const user = window.OfficeApp && window.OfficeApp.currentUser();
+                if (!user || (user.role || '').toLowerCase() !== 'admin') {
+                    console.error('Not authenticated as admin');
+                    document.getElementById('admin-content').innerHTML = '<p style="text-align: center; padding: 50px; color: #dc2626;">Not authenticated as admin. Please login again.</p>';
+                    document.getElementById('admin-content').style.display = 'block';
+                    return;
+                }
+                
+                console.log('Current user:', user);
+                
+                // Try different admin usernames
+                const adminUsernames = [user.emp_id];                
+                let adminData = null;
+                
+                for (const username of adminUsernames) {
+                    try {
+                        console.log(`Trying admin profile for username: ${username}`);
+                        const response = await fetch(`${API_BASE}/admin/profile?username=${encodeURIComponent(username)}`);
+                        const data = await response.json();
+                        console.log(`Response for ${username}:`, data);
+                        
+                        if (data.success && data.profile) {
+                            adminData = data.profile;
+                            console.log('Found admin data:', adminData);
+                            console.log('Last login value:', adminData.last_login_at);
+                            console.log('Last login type:', typeof adminData.last_login_at);
+                            break;
+                        }
+                    } catch (error) {
+                        console.log(`Failed for ${username}:`, error);
+                    }
+                }
+                
+                if (adminData) {
+                    displayAdminDetails(adminData);
+                } else {
+                    console.error('Admin not found with any username');
+                    // Show fallback with session data
+                    displayFallbackProfile(user);
+                }
+                
+            } catch (error) {
+                console.error('Error loading admin details:', error);
+                document.getElementById('admin-content').innerHTML = '<p style="text-align: center; padding: 50px; color: #dc2626;">Error loading profile. Please try again.</p>';
+                document.getElementById('admin-content').style.display = 'block';
+            }
+        }
+        
+        // Helper function to display profile photo
+        function displayProfilePhoto(photoUrl, username) {
+            const photoContainer = document.getElementById('photo-container');
+            if (photoUrl) {
+                photoContainer.innerHTML = `<img src="${photoUrl}" alt="${username}" class="admin-photo">`;
+            }
+        }
+        
+        // Fallback profile display using session data
+        function displayFallbackProfile(user) {
+            console.log('Using fallback profile for:', user);
+            
+            // Update header
+            document.getElementById('admin-name-header').textContent = 'Admin Profile';
+            
+            // Update info grid with available session data
+            document.getElementById('admin-username').textContent = user.username || '—';
+            document.getElementById('admin-email').textContent = user.email || '—';
+            
+            const roleBadge = '<span class="badge badge-info">Administrator</span>';
+            document.getElementById('admin-role').innerHTML = roleBadge;
+            
+            const statusBadge = '<span class="badge badge-approved">Active</span>';
+            document.getElementById('admin-status').innerHTML = statusBadge;
+            
+            // Format and display last login time
+            const lastLogin = user.last_login_at;
+            if (lastLogin) {
+                try {
+                    const loginDate = new Date(lastLogin);
+                    if (!isNaN(loginDate.getTime())) {
+                        const options = {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        };
+                        document.getElementById('admin-last-login').textContent = loginDate.toLocaleString('en-US', options);
+                    } else {
+                        document.getElementById('admin-last-login').textContent = 'Unknown';
+                    }
+                } catch (error) {
+                    document.getElementById('admin-last-login').textContent = 'Invalid date';
+                }
+            } else {
+                document.getElementById('admin-last-login').textContent = 'Never';
+            }
+            
+            // Show content
+            const adminContent = document.getElementById('admin-content');
+            if (adminContent) {
+                adminContent.style.display = 'block';
+            }
+        }
+        
+        // Display admin details
+        function displayAdminDetails(admin) {
+            // Update header with admin name
+            const adminName = admin.full_name || admin.username || 'Admin';
+            const nameHeader = document.getElementById('admin-name-header');
+            if (nameHeader) {
+                nameHeader.textContent = `${adminName}'s Profile`;
+            }
+            
+            // Update info grid from database
+            const usernameEl = document.getElementById('admin-username');
+            const emailEl = document.getElementById('admin-email');
+            const roleEl = document.getElementById('admin-role');
+            const statusEl = document.getElementById('admin-status');
+            const lastLoginEl = document.getElementById('admin-last-login');
+            
+            if (usernameEl) usernameEl.textContent = admin.username || '—';
+            if (emailEl) emailEl.textContent = admin.email || '—';
+            
+            const roleBadge = '<span class="badge badge-info">Administrator</span>';
+            if (roleEl) roleEl.innerHTML = roleBadge;
+            
+            const statusBadge = '<span class="badge badge-approved">Active</span>';
+            if (statusEl) statusEl.innerHTML = statusBadge;
+            
+            // Format and display last login time from database
+            const lastLogin = admin.last_login_at;
+            if (lastLogin && lastLoginEl) {
+                try {
+                    // Backend now sends consistent format: "2026-02-14 23:24:56"
+                    let loginDate;
+                    if (typeof lastLogin === 'string') {
+                        // Replace space with 'T' to create ISO format
+                        const isoString = lastLogin.replace(' ', 'T');
+                        loginDate = new Date(isoString);
+                    } else {
+                        loginDate = new Date(lastLogin);
+                    }
+                    
+                    if (!isNaN(loginDate.getTime())) {
+                        const day = String(loginDate.getDate()).padStart(2, '0');
+                        const month = String(loginDate.getMonth() + 1).padStart(2, '0');
+                        const year = loginDate.getFullYear();
+                        const hours = loginDate.getHours();
+                        const minutes = String(loginDate.getMinutes()).padStart(2, '0');
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        const displayHours = hours % 12 || 12;
+                        
+                        const formattedDate = `${day}-${month}-${year}, ${displayHours}:${minutes} ${ampm}`;
+                        lastLoginEl.textContent = formattedDate;
+                    } else {
+                        lastLoginEl.textContent = 'Unknown';
+                    }
+                } catch (error) {
+                    if (lastLoginEl) lastLoginEl.textContent = 'Invalid date';
+                }
+            } else if (lastLoginEl) {
+                lastLoginEl.textContent = 'Never';
+            }
+            
+            // Show admin content
+            const adminContent = document.getElementById('admin-content');
+            if (adminContent) {
+                adminContent.style.display = 'block';
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check authentication
+            const user = window.OfficeApp && window.OfficeApp.currentUser();
+            if (!user || (user.role || '').toLowerCase() !== 'admin') {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Load sidebar and admin details simultaneously
+            if (window.OfficeApp && window.OfficeApp.loadSidebar) {
+                window.OfficeApp.loadSidebar();
+            }
+            
+            // Load admin details immediately (don't wait for sidebar)
+            loadAdminDetails();
+        });
+    </script>
+</body>
+</html>

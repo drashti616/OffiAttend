@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+        }
+
+        .employee-details-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .employee-header {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .employee-photo-section {
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .employee-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #3b82f6;
+            margin-bottom: 15px;
+        }
+
+        .no-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #94a3b8;
+            border: 4px solid #e2e8f0;
+            margin-bottom: 15px;
+        }
+
+        .employee-info {
+            padding: 30px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #64748b;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 20px;
+        }
+
+        .back-link:hover {
+            color: #2563eb;
+        }
+    </style>
+</head>
+
+<body data-requires-auth="true">
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+    <div class="mobile-overlay"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar (Loaded dynamically from sidebar.html) -->
+        <div id="sidebar-container"></div>
+
+        <main class="main-content">
+            <div class="page">
+                <div class="container">
+                    <div class="employee-details-container">
+                        <div class="employee-header">
+                            <h1 id="employee-name-header">Employee Details</h1>
+                        </div>
+                        <div id="employee-content" style="display: none;">
+                            <div class="employee-photo-section">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                                    <div id="photo-container">
+                                        <div class="no-photo">👤</div>
+                                    </div>
+                                    <div style="text-align: left;">
+                                        <h2 id="employee-fullname"
+                                            style="margin: 0 0 5px 0; color: #1f2937; font-size: 24px;">Employee Name
+                                        </h2>
+                                        <p id="employee-id" style="font-size: 16px; color: #64748b; margin: 0;">Employee
+                                            ID: emp001</p>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="employee-info">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Email</div>
+                                        <div class="info-value" id="employee-email">—</div>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <div class="info-label">Mobile</div>
+                                        <div class="info-value" id="employee-mobile">—</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Designation</div>
+                                        <div class="info-value" id="employee-designation">—</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Status</div>
+                                        <div class="info-value" id="employee-status">—</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Joining Date</div>
+                                        <div class="info-value" id="employee-joining-date">—</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Address</div>
+                                        <div class="info-value" id="employee-address">—</div>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <div class="info-label">Total Present</div>
+                                        <div class="info-value" id="employee-total-present">0</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Total Absent</div>
+                                        <div class="info-value" id="employee-total-absent">0</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Total Leave</div>
+                                        <div class="info-value" id="employee-total-leave">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/pages.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        const API_ORIGIN = 'http://localhost:5000';
+
+        // Get employee ID from URL
+        function getEmployeeIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Load employee details
+        async function loadEmployeeDetails() {
+            const empId = getEmployeeIdFromUrl();
+
+            if (!empId) {
+                console.error('No employee ID specified');
+                return;
+            }
+
+            try {
+                console.log('Loading employee details for:', empId);
+
+                const response = await fetch(`${API_BASE}/profile/${empId}`);
+                const data = await response.json();
+
+                console.log('Employee details response:', data);
+
+                if (data.success && data.profile) {
+                    displayEmployeeDetails(data.profile);
+                } else {
+                    console.error('Employee not found:', data.error);
+                }
+
+            } catch (error) {
+                console.error('Error loading employee details:', error);
+            }
+        }
+
+        // Function to update employee attendance stats
+        function updateEmployeeKPICards(attendance) {
+            console.log('Updating employee KPI cards with attendance data:', attendance);
+
+            // Calculate statistics
+            let presentCount = 0;
+            let absentCount = 0;
+            let leaveCount = 0;
+
+            attendance.forEach(record => {
+                const status = (record.status || '').toLowerCase();
+                if (status === 'present' || status === 'late') {
+                    presentCount++; // Late employees are also present
+                } else if (status === 'absent') {
+                    absentCount++;
+                } else if (status === 'leave') {
+                    leaveCount++;
+                }
+            });
+
+            // Update existing stats elements in info grid
+            document.getElementById('employee-total-present').textContent = presentCount;
+            document.getElementById('employee-total-absent').textContent = absentCount;
+            document.getElementById('employee-total-leave').textContent = leaveCount;
+
+            console.log('Employee KPI Updated - Present:', presentCount, 'Absent:', absentCount, 'Leave:', leaveCount);
+        }
+
+        // Load employee attendance data
+        async function loadEmployeeAttendance(empId) {
+            try {
+                // Get current month date range
+                const today = new Date();
+                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+                const fromDate = firstDayOfMonth.toISOString().split('T')[0];
+                const toDate = lastDayOfMonth.toISOString().split('T')[0];
+
+                console.log(`Fetching attendance from ${fromDate} to ${toDate} for employee ${empId}`);
+
+                const response = await fetch(`${API_BASE}/attendance?from_date=${fromDate}&to_date=${toDate}&emp_id=${empId}`);
+                const data = await response.json();
+
+                // Handle wrapped response object
+                let attendance = [];
+                if (data && data.success && Array.isArray(data.attendance)) {
+                    attendance = data.attendance;
+                } else if (Array.isArray(data)) {
+                    attendance = data;
+                }
+
+                console.log('Employee attendance data:', attendance);
+
+                // Update KPI cards
+                updateEmployeeKPICards(attendance);
+
+            } catch (error) {
+                console.error('Error loading employee attendance:', error);
+                // Set error state
+                document.getElementById('employee-total-present').textContent = 'Error';
+                document.getElementById('employee-total-absent').textContent = 'Error';
+                document.getElementById('employee-total-leave').textContent = 'Error';
+            }
+        }
+
+        // Display employee details
+        function displayEmployeeDetails(emp) {
+            // Update header
+            document.getElementById('employee-name-header').textContent = `${emp.full_name || 'Employee'}'s Details`;
+
+            // Update photo section
+            const photoContainer = document.getElementById('photo-container');
+            const photoUrl = emp.profile_pic_path
+                ? `${API_ORIGIN}/${emp.profile_pic_path.replace(/\\/g, '/')}`
+                : '';
+
+            if (photoUrl) {
+                photoContainer.innerHTML = `<img src="${photoUrl}" alt="${emp.full_name}" class="employee-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="no-photo" style="display:none;">👤</div>`;
+            } else {
+                // Generate initials from name
+                const initials = (emp.full_name || 'Employee').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                photoContainer.innerHTML = `<div class="no-photo">${initials}</div>`;
+            }
+
+            // Update name and ID near photo
+            document.getElementById('employee-fullname').textContent = emp.full_name || 'Employee Name';
+            document.getElementById('employee-id').textContent = `Employee ID: ${emp.emp_id || 'emp001'}`;
+
+            // Update info grid
+            document.getElementById('employee-email').textContent = emp.email || '—';
+            document.getElementById('employee-mobile').textContent = emp.mobile || '—';
+            document.getElementById('employee-designation').textContent = emp.designation || '—';
+
+            const statusBadge = emp.status === 'Active'
+                ? '<span class="badge badge-approved">Active</span>'
+                : '<span class="badge badge-rejected">Inactive</span>';
+            document.getElementById('employee-status').innerHTML = statusBadge || '—';
+
+            document.getElementById('employee-joining-date').textContent = emp.joining_date
+                ? (() => {
+                    try {
+                        const date = new Date(emp.joining_date);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                        return `${day}-${month}-${year}`;
+                    } catch (e) {
+                        // Handle various date formats and convert to dd-mm-yyyy
+                        const dateStr = emp.joining_date.split('T')[0] || emp.joining_date;
+                        if (dateStr.includes('-')) {
+                            const parts = dateStr.split('-');
+                            if (parts.length === 3) {
+                                // Already in dd-mm-yyyy or yyyy-mm-dd format
+                                const [year, month, day] = parts;
+                                return `${day}-${month}-${year}`;
+                            }
+                        }
+                        return dateStr;
+                    }
+                })()
+                : '—';
+            document.getElementById('employee-address').textContent = emp.address || '—';
+
+            // Update attendance stats (these might not be available from employees API)
+            document.getElementById('employee-total-present').textContent = 'Loading...';
+            document.getElementById('employee-total-absent').textContent = 'Loading...';
+            document.getElementById('employee-total-leave').textContent = 'Loading...';
+
+            // Show content
+            document.getElementById('employee-content').style.display = 'block';
+
+            // Load attendance data for real stats
+            loadEmployeeAttendance(emp.emp_id || empId);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check authentication
+            const user = window.OfficeApp && window.OfficeApp.currentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Allow employees to view their own profile or admins to view any profile
+            const empId = getEmployeeIdFromUrl();
+            const isAdmin = (user.role || '').toLowerCase() === 'admin';
+            const isOwnProfile = user.emp_id === empId || user.username === empId;
+
+            if (!isAdmin && !isOwnProfile) {
+                window.location.href = 'employee_dashboard.html';
+                return;
+            }
+
+            // Load sidebar and employee details simultaneously
+            if (window.OfficeApp && window.OfficeApp.loadSidebar) {
+                window.OfficeApp.loadSidebar();
+            }
+
+
+            // Load employee details immediately (don't wait for sidebar)
+            loadEmployeeDetails();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Dashboard • OffiAttend</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page">
+        <div class="container">
+          <div class="page-header">
+            <div class="page-header-left">
+              <h1 class="page-title">Welcome Back!</h1>
+              <div class="page-subtitle">Here's your attendance overview</div>
+            </div>
+          </div>
+
+          <!-- Stats Cards -->
+          <div class="grid grid-4 animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="gradient-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+              <div
+                style="font-size: var(--font-size-sm); opacity: 0.9; margin-bottom: var(--space-sm); color: white; font-weight: 600;">
+                Days Present</div>
+              <div style="font-size: var(--font-size-3xl); font-weight: 800; color: white;" data-stat-present>—</div>
+            </div>
+
+            <div class="gradient-card" style="background: linear-gradient(135deg, #dc2626, #dc2626);">
+              <div
+                style="font-size: var(--font-size-sm); opacity: 0.9; margin-bottom: var(--space-sm); color: white; font-weight: 600;">
+                Days Absent</div>
+              <div style="font-size: var(--font-size-3xl); font-weight: 800; color: white;" data-stat-absent>—</div>
+            </div>
+
+            <div class="gradient-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+              <div
+                style="font-size: var(--font-size-sm); opacity: 0.9; margin-bottom: var(--space-sm); color: white; font-weight: 600;">
+                Leave Days</div>
+              <div style="font-size: var(--font-size-3xl); font-weight: 800; color: white;" data-stat-leave>—</div>
+            </div>
+          </div>
+
+          <!-- Recent Attendance -->
+          <div class="card fade-in">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Recent Attendance</h2>
+                <div class="card-subtitle">Your last 10 attendance records with status tracking</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Entry Time</th>
+                      <th>Exit Time</th>
+                      <th>Status</th>
+                      <th>Leave Status</th>
+                      <th>View</th>
+                    </tr>
+                  </thead>
+                  <tbody data-employee-attendance>
+                    <tr>
+                      <td colspan="5" class="muted" style="text-align: center; padding: var(--space-xl);">Loading…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/responsive.js"></script>
+  <script src="js/pages.js"></script>
+  <script>
+    const API_BASE = 'http://localhost:5000/api';
+
+    // Get current month in YYYY-MM format
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    function formatDate(d) {
+      if (!d) return "—";
+      try {
+        // Handle DD-MM-YYYY format from backend
+        if (typeof d === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(d)) {
+          return d; // Already in DD-MM-YYYY format
+        } else if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+          // Convert YYYY-MM-DD to DD-MM-YYYY
+          const [year, month, day] = d.split('-');
+          return `${day}-${month}-${year}`;
+        } else {
+          // Try to parse and format
+          const dt = new Date(d + "T12:00:00");
+          const day = String(dt.getDate()).padStart(2, '0');
+          const month = String(dt.getMonth() + 1).padStart(2, '0');
+          const year = dt.getFullYear();
+          return `${day}-${month}-${year}`;
+        }
+      } catch (e) { return d; }
+    }
+
+    // Load employee stats
+    async function loadEmployeeStats() {
+      try {
+        const user = window.OfficeApp && window.OfficeApp.currentUser();
+        if (!user || !user.emp_id) return;
+
+        // Fetch employee data for current month
+        const response = await fetch(`${API_BASE}/profile/${user.emp_id}?month=${currentMonth}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        if (data.success && data.profile) {
+          const profile = data.profile;
+          console.log('Employee profile loaded:', profile);
+
+          // Update KPI cards with monthly data
+          updateEmployeeKPICards([profile]);
+        }
+      } catch (error) {
+        console.error('Error loading employee stats:', error);
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    // Function to update employee KPI cards
+    function updateEmployeeKPICards(attendance) {
+      console.log('Updating employee KPI cards with attendance data:', attendance);
+
+      // Calculate statistics for the last 10 days
+      let presentCount = 0;
+      let absentCount = 0;
+      let leaveCount = 0;
+
+      attendance.forEach(record => {
+        const status = (record.status || '').toLowerCase();
+        if (status === 'present' || status === 'late') {
+          presentCount++; // Late employees are also present
+        }
+        if (status === 'absent') {
+          absentCount++;
+        }
+        if (status === 'leave') {
+          leaveCount++;
+        }
+      });
+
+      // Update KPI cards
+      const presentEl = document.querySelector('[data-stat-present]');
+      const absentEl = document.querySelector('[data-stat-absent]');
+      const leaveEl = document.querySelector('[data-stat-leave]');
+
+      if (presentEl) presentEl.textContent = presentCount;
+      if (absentEl) absentEl.textContent = absentCount;
+      if (leaveEl) leaveEl.textContent = leaveCount;
+
+      console.log('Employee KPI Updated - Present:', presentCount, 'Absent:', absentCount, 'Leave:', leaveCount);
+    }
+
+    // Load recent attendance
+    async function loadRecentAttendance() {
+      try {
+        const user = window.OfficeApp && window.OfficeApp.currentUser();
+        if (!user) return;
+
+        const empId = user.emp_id || user.username;
+
+        // Calculate date range for last 10 days including tomorrow
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const tenDaysAgo = new Date(today);
+        tenDaysAgo.setDate(today.getDate() - 9); // -9 to include today and tomorrow (total 10 days)
+
+        const fromDate = tenDaysAgo.toISOString().split('T')[0];
+        const toDate = tomorrow.toISOString().split('T')[0];
+
+        console.log(`Fetching attendance from ${fromDate} to ${toDate}`);
+
+        const response = await fetch(`${API_BASE}/attendance?from_date=${fromDate}&to_date=${toDate}&emp_id=${empId}`);
+        const data = await response.json();
+
+        // Handle wrapped response object
+        let attendance = [];
+        if (data && data.success && Array.isArray(data.attendance)) {
+          attendance = data.attendance;
+        } else if (Array.isArray(data)) {
+          attendance = data;
+        }
+
+        console.log('Employee attendance data:', attendance);
+
+        // Update KPI cards
+        updateEmployeeKPICards(attendance);
+
+        if (attendance.length > 0) {
+          const tbody = document.querySelector('[data-employee-attendance]');
+          tbody.innerHTML = attendance.slice(0, 10).map(record => {
+            const status = (record.status || '').toLowerCase();
+            let badgeClass = 'badge-pending'; // default blue
+
+            if (status === 'present') {
+              badgeClass = 'badge-present'; // green
+            } else if (status === 'absent') {
+              badgeClass = 'badge-absent'; // red
+            } else if (status === 'leave') {
+              badgeClass = 'badge-leave'; // purple
+            } else if (status === 'late') {
+              badgeClass = 'badge-late'; // orange
+            } else if (status === 'missing exit') {
+              badgeClass = 'badge-missing-exit'; // yellow
+            } else if (status === 'early leave') {
+              badgeClass = 'badge-early-leave'; // orange
+            }
+
+            // Determine leave status display
+            const leaveStatus = record.leave_status || 'Not Applied';
+            let leaveBadgeClass = 'badge-pending';
+            if (leaveStatus === 'Approved') {
+              leaveBadgeClass = 'badge-present';
+            } else if (leaveStatus === 'Rejected') {
+              leaveBadgeClass = 'badge-absent';
+            } else if (leaveStatus === 'Pending') {
+              leaveBadgeClass = 'badge-pending';
+            }
+
+            return `
+              <tr>
+                <td>${formatDate(record.att_date || record.date)}</td>
+                <td>${record.in_time || record.first_entry || '—'}</td>
+                <td>${record.out_time || record.last_exit || '—'}</td>
+                <td><span class="badge ${badgeClass}">${record.status_display || record.status}</span></td>
+                <td><span class="badge ${leaveBadgeClass}">${leaveStatus}</span></td>
+                <td>
+                  <button class="btn btn-gradient-primary btn-sm" onclick="showAttendanceDetails('${record.att_date || record.date}', '${empId}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    View
+                  </button>
+                </td>
+              </tr>
+              <tr id="detail_row_${empId}_${record.att_date || record.date}" style="display: none;">
+                <td colspan="6" style="padding: 0;">
+                  <div class="detail-content" style="padding: 20px; border-left: 4px solid var(--primary-from); background: var(--bg-light);">
+                    <h4>Attendance Details for ${formatDate(record.att_date || record.date)} - ${empId}</h4>
+                    <div id="scan_logs_${empId}_${record.att_date || record.date}">Loading scan logs...</div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        } else {
+          const tbody = document.querySelector('[data-employee-attendance]');
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: var(--space-xl);">No attendance records found for the last 10 days</td></tr>';
+        }
+      } catch (error) {
+        console.error('Error loading attendance:', error);
+        const tbody = document.querySelector('[data-employee-attendance]');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #dc2626;">Error loading attendance</td></tr>';
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check authentication
+      const user = window.OfficeApp && window.OfficeApp.currentUser();
+      if (!user) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Load sidebar
+      if (window.OfficeApp && window.OfficeApp.loadSidebar) {
+        window.OfficeApp.loadSidebar();
+      }
+
+      // Load employee data
+      loadEmployeeStats();
+      loadRecentAttendance();
+    });
+
+    // Attendance Details Functions
+    function showAttendanceDetails(date, empId) {
+      console.log('showAttendanceDetails called with:', date, empId);
+
+      // Close all other open detail rows first
+      document.querySelectorAll('[id^="detail_row_"]').forEach(row => {
+        if (row.id !== `detail_row_${empId}_${date}`) {
+          row.style.display = 'none';
+        }
+      });
+
+      const detailRow = document.getElementById(`detail_row_${empId}_${date}`);
+      console.log('Found detail row:', detailRow);
+
+      if (!detailRow) {
+        console.error('Detail row not found for:', empId, date);
+        alert('Error: Could not find details row');
+        return;
+      }
+
+      // Toggle current row
+      if (detailRow.style.display === 'none' || detailRow.style.display === '') {
+        // Show detail
+        console.log('Showing detail row');
+        detailRow.style.display = 'table-row';
+        loadScanLogs(date, empId);
+      } else {
+        // Hide detail
+        console.log('Hiding detail row');
+        detailRow.style.display = 'none';
+      }
+    }
+
+    function loadScanLogs(date, empId) {
+      console.log('loadScanLogs called with:', date, empId);
+      const logsContainer = document.getElementById(`scan_logs_${empId}_${date}`);
+
+      if (!logsContainer) {
+        console.error('Logs container not found for:', empId, date);
+        return;
+      }
+
+      logsContainer.innerHTML = 'Loading scan logs...';
+
+      const url = `${API_BASE}/attendance/logs?emp_id=${empId}&date=${date}`;
+      console.log('Fetching logs from:', url);
+
+      fetch(url)
+        .then(r => {
+          console.log('Response status:', r.status);
+          return r.json();
+        })
+        .then(data => {
+          console.log('Logs data:', data);
+          if (data.success && data.logs) {
+            // Separate ENTRY and EXIT logs
+            const entryLogs = data.logs.filter(log => log.action === 'ENTRY');
+            const exitLogs = data.logs.filter(log => log.action === 'EXIT');
+
+            // Create table with Entry and Exit columns
+            const logsHtml = `
+              <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                  <h5 style="color: #16a34a; margin-bottom: 10px;">Entry Times</h5>
+                  ${entryLogs.length > 0 ? entryLogs.map(log => `
+                    <div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px;">
+                      ${formatTime(log.created_at)}
+                    </div>
+                  `).join('') : '<p style="color: #999;">No entry scans</p>'}
+                </div>
+                <div style="flex: 1;">
+                  <h5 style="color: #dc2626; margin-bottom: 10px;">Exit Times</h5>
+                  ${exitLogs.length > 0 ? exitLogs.map(log => `
+                    <div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">
+                      ${formatTime(log.created_at)}
+                    </div>
+                  `).join('') : '<p style="color: #999;">No exit scans</p>'}
+                </div>
+              </div>
+            `;
+
+            logsContainer.innerHTML = logsHtml;
+          } else {
+            logsContainer.innerHTML = '<p>No scan logs found</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading scan logs:', error);
+          logsContainer.innerHTML = '<p>Error loading scan logs: ' + error.message + '</p>';
+        });
+    }
+
+    function formatTime(timeStr) {
+      if (!timeStr || timeStr === "—") return "—";
+      if (typeof timeStr === 'string' && timeStr.length >= 8) return timeStr.slice(0, 8); // HH:MM:SS format
+      if (typeof timeStr === 'string' && timeStr.length >= 5) return timeStr.slice(0, 5) + ":00"; // HH:MM -> HH:MM:SS
+      return timeStr;
+    }
+
+    // Make functions globally available
+    window.showAttendanceDetails = showAttendanceDetails;
+    window.loadScanLogs = loadScanLogs;
+    window.formatTime = formatTime;
+  </script>
+</body>
+
+</html>

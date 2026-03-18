@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Today's Report • Office Attendance System</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Remove custom pending button styles - use shared CSS badge-pending class instead */
+  </style>
+</head>
+
+<body data-requires-auth="true">
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <div class="page">
+        <div class="container">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Attendance Report</h1>
+              <p class="page-subtitle">Filter by month and search employees to view attendance records</p>
+            </div>
+          </div>
+
+          <div class="card fade-in">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title" id="attendance-table-title">Attendance Report</h2>
+                <p class="card-subtitle" data-report-month>Monthly overview of employee attendance records</p>
+              </div>
+              <div class="card-actions" style="display: flex; gap: var(--space-sm); align-items: center;">
+                <label class="label" style="margin:0; font-weight:600; color:var(--text-light);">Month</label>
+                <input type="month" id="monthFilter" class="field" style="width: 180px;">
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="field" data-admin-only style="margin-bottom: var(--space-lg);">
+                <label class="label attendance-text-muted" for="filter_emp"
+                  style="font-size: 13px; margin-bottom: 4px; display: block;">Search employee (Emp ID or Name)</label>
+                <input id="filter_emp" class="field" style="width: 100%; margin-bottom: 0;"
+                  placeholder="Enter ID or Name..." />
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Emp ID</th>
+                      <th>Entry Time</th>
+                      <th>Exit Time</th>
+                      <th>Status</th>
+                      <th>Leave Status</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody data-report>
+                    <tr>
+                      <td colspan="6" class="muted" style="text-align: center; padding: var(--space-xl);">Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/pages.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (!window.OfficeApp) return;
+      const API_BASE_URL = window.location.origin + '/api';
+      const user = window.OfficeApp.currentUser();
+      const isAdmin = (user?.role || "").toLowerCase() === "admin";
+
+      // Redirect employees to employee-specific attendance
+      if (!isAdmin) {
+        window.location.href = "employee_attendance.html";
+        return;
+      }
+      const backLink = document.querySelector("[data-back-link]") || document.querySelector(".back-link");
+      if (backLink && !isAdmin) backLink.href = "employee_dashboard.html";
+
+      const reportTbody = document.querySelector("tbody[data-report]");
+      const filterEmp = document.getElementById("filter_emp");
+      const exportPdfBtn = document.querySelector("[data-export-pdf]");
+      const exportCsvBtn = document.querySelector("[data-export-csv]");
+      const monthLabel = document.querySelector("[data-report-month]");
+      const monthFilter = document.getElementById("monthFilter");
+
+      // Set default month to current month
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      if (monthFilter && !monthFilter.value) {
+        monthFilter.value = currentMonth;
+      }
+
+      let currentData = [];
+
+      function showAttendanceDetails(date, empId) {
+        console.log('showAttendanceDetails called with:', date, empId);
+
+        // Close all other open detail rows first
+        document.querySelectorAll('[id^="detail_row_"]').forEach(row => {
+          if (row.id !== `detail_row_${empId}_${date}`) {
+            row.style.display = 'none';
+          }
+        });
+
+        const detailRow = document.getElementById(`detail_row_${empId}_${date}`);
+        console.log('Found detail row:', detailRow);
+
+        if (!detailRow) {
+          console.error('Detail row not found for:', empId, date);
+          alert('Error: Could not find details row');
+          return;
+        }
+
+        // Toggle current row
+        if (detailRow.style.display === 'none' || detailRow.style.display === '') {
+          // Show detail
+          console.log('Showing detail row');
+          detailRow.style.display = 'table-row';
+          loadScanLogs(date, empId);
+        } else {
+          // Hide detail
+          console.log('Hiding detail row');
+          detailRow.style.display = 'none';
+        }
+      }
+
+      function loadScanLogs(date, empId) {
+        console.log('loadScanLogs called with:', date, empId);
+        const logsContainer = document.getElementById(`scan_logs_${empId}_${date}`);
+
+        if (!logsContainer) {
+          console.error('Logs container not found for:', empId, date);
+          return;
+        }
+
+        logsContainer.innerHTML = 'Loading scan logs...';
+
+        const url = `${API_BASE_URL}/attendance/logs?emp_id=${empId}&date=${date}`;
+        console.log('Fetching logs from:', url);
+
+        fetch(url)
+          .then(r => {
+            console.log('Response status:', r.status);
+            return r.json();
+          })
+          .then(data => {
+            console.log('Logs data:', data);
+            if (data.success && data.logs) {
+              // Separate ENTRY and EXIT logs
+              const entryLogs = data.logs.filter(log => log.action === 'ENTRY');
+              const exitLogs = data.logs.filter(log => log.action === 'EXIT');
+
+              // Create table with Entry and Exit columns
+              const logsHtml = `
+                <div style="display: flex; gap: 20px;">
+                  <div style="flex: 1;">
+                    <h5 style="color: #16a34a; margin-bottom: 10px;">Entry Times</h5>
+                    ${entryLogs.length > 0 ? entryLogs.map(log => `
+                      <div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px;">
+                        ${formatTime(log.created_at)}
+                      </div>
+                    `).join('') : '<p style="color: #999;">No entry scans</p>'}
+                  </div>
+                  <div style="flex: 1;">
+                    <h5 style="color: #dc2626; margin-bottom: 10px;">Exit Times</h5>
+                    ${exitLogs.length > 0 ? exitLogs.map(log => `
+                      <div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">
+                        ${formatTime(log.created_at)}
+                      </div>
+                    `).join('') : '<p style="color: #999;">No exit scans</p>'}
+                  </div>
+                </div>
+              `;
+
+              logsContainer.innerHTML = logsHtml;
+            } else {
+              logsContainer.innerHTML = '<p>No scan logs found</p>';
+            }
+          })
+          .catch(error => {
+            console.error('Error loading scan logs:', error);
+            logsContainer.innerHTML = '<p>Error loading scan logs: ' + error.message + '</p>';
+          });
+      }
+
+      // Make functions globally available
+      window.showAttendanceDetails = showAttendanceDetails;
+      window.loadScanLogs = loadScanLogs;
+
+      function updateMetrics(metrics) {
+        // Update metrics display if needed
+        console.log('Metrics:', metrics);
+      }
+
+      function formatTime(timeStr) {
+        if (!timeStr || timeStr === "—") return "—";
+        if (typeof timeStr === 'string' && timeStr.length >= 8) return timeStr.slice(0, 8); // HH:MM:SS format
+        if (typeof timeStr === 'string' && timeStr.length >= 5) return timeStr.slice(0, 5) + ":00"; // HH:MM -> HH:MM:SS
+        return timeStr;
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return "—";
+        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          const [year, month, day] = dateStr.split('-');
+          return `${day}-${month}-${year}`;
+        }
+        return dateStr;
+      }
+
+      function loadReport() {
+        console.log('loadReport called');
+        const month = monthFilter?.value || "";
+        console.log('Selected Month:', month);
+        if (monthLabel) monthLabel.textContent = "Month: " + month;
+
+        if (!month) {
+          reportTbody.innerHTML = '<tr><td colspan="7" class="muted">Please select a month</td></tr>';
+          return;
+        }
+
+        // Use working attendance endpoint with filter
+        const url = `${API_BASE_URL}/attendance?month=${month}`;
+        console.log('Fetching URL:', url);
+
+        fetch(url)
+          .then(r => {
+            console.log('Response status:', r.status);
+            if (!r.ok) {
+              throw new Error(`HTTP error! status: ${r.status}`);
+            }
+            return r.json();
+          })
+          .then(data => {
+            console.log('Raw data received:', data);
+            let attendance = [];
+
+            // Handle wrapped response object
+            if (data && data.success && Array.isArray(data.attendance)) {
+              attendance = data.attendance;
+            } else if (Array.isArray(data)) {
+              attendance = data;
+            }
+
+            console.log('Processed attendance array:', attendance);
+            console.log('Attendance length:', attendance.length);
+
+            if (filterEmp?.value?.trim()) {
+              const q = filterEmp.value.trim().toLowerCase();
+              attendance = attendance.filter(r =>
+                String(r.emp_id || "").toLowerCase().includes(q) ||
+                String(r.name || "").toLowerCase().includes(q)
+              );
+            }
+            console.log('Final attendance after filtering:', attendance);
+
+            const d = (r) => {
+              const dateStr = r.att_date || r.date || '—';
+              if (dateStr === '—') return dateStr;
+
+              try {
+                const date = new Date(dateStr);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}-${month}-${year}`; // dd-mm-yyyy
+              } catch (e) {
+                // Handle various date formats and convert to dd-mm-yyyy
+                if (dateStr.includes('-')) {
+                  const parts = dateStr.split('-');
+                  if (parts.length === 3) {
+                    // Already in dd-mm-yyyy or yyyy-mm-dd format
+                    const [year, month, day] = parts;
+                    return `${day}-${month}-${year}`; // Convert to dd-mm-yyyy
+                  }
+                }
+                return dateStr;
+              }
+            };
+
+            console.log('reportTbody element:', reportTbody);
+
+            const t = document.getElementById('attendance-report-title');
+            const tableTitle = document.getElementById('attendance-table-title');
+            if (t) t.textContent = 'All Employees Attendance';
+            if (tableTitle) tableTitle.textContent = 'Attendance Report';
+
+            if (attendance.length === 0) {
+              console.log('No attendance found, showing empty message');
+              reportTbody.innerHTML = '<tr><td colspan="7" class="muted">No attendance records found for selected month.</td></tr>';
+            } else {
+              console.log('Rendering attendance table with', attendance.length, 'records');
+              const html = attendance.map(r => {
+                console.log('Processing record:', r);
+                const statusBadge = (status) => {
+                  const s = (status || '').toLowerCase();
+                  if (s === 'late') return '<span class="badge badge-late">Late</span>';
+                  if (s === 'absent') return '<span class="badge badge-absent">Absent</span>';
+                  if (s === 'present') return '<span class="badge badge-present">Present</span>';
+                  if (s === 'leave') return '<span class="badge badge-leave">Leave</span>';
+                  if (s === 'pending') return '<span class="badge badge-pending">Pending</span>';
+                  return status || '—';
+                };
+                
+                const leaveStatus = r.leave_status || 'Not Applied';
+                let leaveBadgeClass = 'badge-pending';
+                if (leaveStatus === 'Approved') {
+                  leaveBadgeClass = 'badge-present';
+                } else if (leaveStatus === 'Rejected') {
+                  leaveBadgeClass = 'badge-absent';
+                } else if (leaveStatus === 'Pending') {
+                  leaveBadgeClass = 'badge-pending';
+                }
+
+                return `
+                <tr>
+                   <td>${d(r)}</td>
+                  <td><strong>${r.emp_id || '—'}</strong></td>
+                  <td>${r.in_time || r.first_entry || '—'}</td>
+                  <td>${r.out_time || r.last_exit || '—'}</td>
+                  <td>${statusBadge(r.status)}</td>
+                  <td><span class="badge ${leaveBadgeClass}">${leaveStatus}</span></td>
+                  <td>
+                    <button class="btn btn-gradient-primary btn-sm" onclick="showAttendanceDetails('${r.att_date}', '${r.emp_id}')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      View
+                    </button>
+                  </td>
+                </tr>
+                <tr id="detail_row_${r.emp_id}_${r.att_date}" style="display: none;">
+                  <td colspan="7" style="padding: 0;">
+                    <div class="detail-content" style="padding: 20px; border-left: 4px solid var(--primary-from); background: var(--bg-light);">
+                      <h4>Attendance Details for ${formatDate(r.att_date)} - ${r.emp_id}</h4>
+                      <div id="scan_logs_${r.emp_id}_${r.att_date}">Loading scan logs...</div>
+                    </div>
+                  </td>
+                </tr>
+              `;
+              }).join("");
+              console.log('Generated HTML length:', html.length);
+              reportTbody.innerHTML = html;
+            }
+          })
+          .catch(error => {
+            console.error('Error in loadReport:', error);
+            reportTbody.innerHTML = '<tr><td colspan="6" class="muted" style="color:#b91c1c;">Connection error: ' + error.message + '</td></tr>';
+          });
+      }
+
+      filterEmp?.addEventListener("input", loadReport);
+      monthFilter?.addEventListener("change", loadReport);
+
+      loadReport();
+    });
+  </script>
+</body>
+
+</html>

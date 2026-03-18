@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leave Application • OffiAttend</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <div class="page">
+        <div class="container">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Leave Application</h1>
+              <p class="page-subtitle">Submit leave request and track status</p>
+            </div>
+          </div>
+
+          <div class="card fade-in">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Apply for Leave</h2>
+                <div class="card-subtitle">Submit your request by filling the details below</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <form class="form" data-leave>
+                <div class="grid grid-2">
+                  <div class="field">
+                    <label class="label" for="from_date">From Date</label>
+                    <input id="from_date" name="from_date" type="date" required />
+                  </div>
+                  <div class="field">
+                    <label class="label" for="to_date">To Date</label>
+                    <input id="to_date" name="to_date" type="date" required />
+                  </div>
+                </div>
+
+                <div class="field" style="margin-top: var(--space-md);">
+                  <label class="label" for="leave_type">Leave Type</label>
+                  <select id="leave_type" name="leave_type" required>
+                    <option value="" selected disabled>Select type</option>
+                    <option>Sick</option>
+                    <option>Casual</option>
+                  </select>
+                </div>
+                <div class="field" style="margin-top: var(--space-md);">
+                  <label class="label" for="reason">Reason</label>
+                  <textarea id="reason" name="reason" placeholder="Write a short reason..."></textarea>
+                </div>
+
+                <div id="leave-warning" style="margin-top: var(--space-md); padding: var(--space-md); border-radius: var(--radius-md); background: rgba(251, 146, 60, 0.1); border-left: 4px solid #fb923c; color: #92400e; display: none;">
+                  <strong>⚠️ Note:</strong> <span id="warning-text"></span>
+                </div>
+
+                <div class="row" style="display: flex; justify-content: flex-end; margin-top: var(--space-lg);">
+                  <button class="btn btn-gradient-primary" type="submit">Submit Application</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/pages.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const user = window.OfficeApp?.currentUser?.();
+      if (!user) { window.location.href = "login.html"; return; }
+
+      const API_BASE_URL = window.location.origin + "/api";
+      const form = document.querySelector("form[data-leave]");
+      const fromDateInput = document.getElementById("from_date");
+      const toDateInput = document.getElementById("to_date");
+      const warningDiv = document.getElementById("leave-warning");
+      const warningText = document.getElementById("warning-text");
+
+      // Set minimum date to today
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      fromDateInput.min = todayStr;
+      toDateInput.min = todayStr;
+
+      // Update to_date minimum when from_date changes
+      fromDateInput.addEventListener("change", () => {
+        toDateInput.min = fromDateInput.value || todayStr;
+        checkDateRestrictions();
+      });
+
+      toDateInput.addEventListener("change", checkDateRestrictions);
+
+      function checkDateRestrictions() {
+        const fromDate = fromDateInput.value;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        warningDiv.style.display = "none";
+
+        if (fromDate) {
+          const fromDateObj = new Date(fromDate + "T00:00:00");
+          const isToday = fromDateObj.getTime() === today.getTime();
+
+          if (isToday) {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const currentTimeInMinutes = hour * 60 + minute;
+            const fivePMInMinutes = 17 * 60; // 5 PM = 17:00
+
+            if (currentTimeInMinutes >= fivePMInMinutes) {
+              warningDiv.style.display = "block";
+              warningText.textContent = "It is after 5:00 PM. You cannot apply leave for today. You can only apply for future dates.";
+              form.querySelector("button[type='submit']").disabled = true;
+            } else {
+              warningDiv.style.display = "block";
+              warningText.textContent = "You are applying leave for today. This can only be done before 5:00 PM.";
+              form.querySelector("button[type='submit']").disabled = false;
+            }
+          } else {
+            form.querySelector("button[type='submit']").disabled = false;
+          }
+        }
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const fromDate = fromDateInput.value;
+        const toDate = toDateInput.value;
+        const leaveType = document.getElementById("leave_type").value;
+        const reason = document.getElementById("reason").value;
+
+        if (!fromDate || !toDate || !leaveType) {
+          alert("Please fill all required fields");
+          return;
+        }
+
+        // Frontend validation: Check if from_date is not in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const fromDateObj = new Date(fromDate + "T00:00:00");
+
+        if (fromDateObj < today) {
+          alert("❌ Cannot apply leave for past dates");
+          return;
+        }
+
+        // Frontend validation: If applying for today, check if before 5 PM
+        const isToday = fromDateObj.getTime() === today.getTime();
+        if (isToday) {
+          const now = new Date();
+          const hour = now.getHours();
+          const minute = now.getMinutes();
+          const currentTimeInMinutes = hour * 60 + minute;
+          const fivePMInMinutes = 17 * 60;
+
+          if (currentTimeInMinutes >= fivePMInMinutes) {
+            alert("❌ Too late to apply leave for today. Leave for today can only be applied before 5:00 PM.");
+            return;
+          }
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/leaves`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              emp_id: user.emp_id,
+              from_date: fromDate,
+              to_date: toDate,
+              leave_type: leaveType,
+              reason: reason
+            })
+          });
+
+          const data = await response.json();
+          console.log("Leave response status:", response.status);
+          console.log("Leave response data:", data);
+
+          // Check if successful (201 Created or 200 OK with success: true)
+          if ((response.status === 201 || response.status === 200) && data.success) {
+            alert("✅ Leave application submitted successfully!");
+            form.reset();
+            warningDiv.style.display = "none";
+            console.log("SUCCESS - Leave created!");
+            // DO NOT REDIRECT - stay on page to debug
+          } else {
+            // Show error message from backend
+            const errorMsg = data.error || data.message || "Failed to submit leave application";
+            console.log("ERROR from backend:", errorMsg);
+            alert(errorMsg);
+          }
+        } catch (error) {
+          console.error("Fetch error:", error);
+          alert("❌ Error: " + error.message);
+        }
+      });
+
+      // Load sidebar
+      if (window.OfficeApp && window.OfficeApp.loadSidebar) {
+        window.OfficeApp.loadSidebar();
+      }
+    });
+  </script>

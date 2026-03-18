@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Employee • OffiAttend</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Remove all custom styles to use main CSS */
+    .password-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .password-row input {
+      flex: 1;
+    }
+    .password-row .btn {
+      padding: 8px 12px;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+    .credential-item {
+      margin-bottom: var(--space-md);
+      padding: var(--space-sm);
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+    }
+    .credential-item label {
+      display: block;
+      margin-bottom: var(--space-xs);
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    .credential-value {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .credential-value span {
+      flex: 1;
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-family: monospace;
+      font-size: var(--font-size-sm);
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.875rem;
+    }
+    
+    /* Hide camera elements by default to prevent black box on page load */
+    #popupVideo,
+#capturedImgSimple {
+  display: none;
+}
+    
+    /* Also hide modal video element */
+    .modal-body #popupVideo {
+      display: none !important;
+    }
+    
+    /* Simple Camera UI */
+    .camera-simple-container {
+      text-align: center;
+      padding: var(--space-lg);
+      background: var(--color-surface);
+      border: 2px dashed var(--color-border);
+      border-radius: 12px;
+    }
+    
+    .camera-preview-simple {
+      position: relative;
+      width: 200px;
+      height: 150px;
+      margin: 0 auto var(--space-md);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+    }
+    
+    .camera-placeholder-simple {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--color-text-secondary);
+    }
+    
+    .camera-icon-simple {
+      margin-bottom: var(--space-xs);
+      opacity: 0.6;
+    }
+    
+    .camera-placeholder-simple p {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+    }
+    
+    .camera-controls-simple {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-md);
+    }
+    
+    /* Camera Popup */
+    .camera-popup-container {
+      text-align: center;
+    }
+    
+    .camera-popup-controls {
+      margin-top: var(--space-md);
+      display: flex;
+      justify-content: center;
+      gap: var(--space-md);
+    }
+    
+    /* Modern Camera UI (keeping for reference) */
+    .camera-container-modern {
+      text-align: center;
+      padding: var(--space-lg);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .camera-preview-modern {
+      position: relative;
+      width: 320px;
+      height: 240px;
+      margin: 0 auto var(--space-md);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .camera-placeholder-modern {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .camera-placeholder-modern:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .camera-icon {
+      margin-bottom: var(--space-sm);
+      opacity: 0.8;
+    }
+    
+    .camera-placeholder-modern p {
+      margin: 0;
+      font-weight: 600;
+      font-size: var(--font-size-lg);
+    }
+    
+    .camera-placeholder-modern small {
+      margin-top: var(--space-xs);
+      opacity: 0.7;
+      font-size: var(--font-size-sm);
+    }
+    
+    .camera-controls-modern {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-md);
+    }
+    
+    .camera-controls-modern .btn-lg {
+      padding: 12px 24px;
+      font-size: var(--font-size-md);
+      border-radius: 50px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .camera-controls-modern .btn-lg:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Enhanced Success Modal Styles */
+    .success-modal {
+      max-width: 600px;
+      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      border: 2px solid #10b981;
+      box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);
+    }
+
+    .success-header {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      padding: 24px;
+      text-align: center;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .success-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
+    }
+
+    .success-message {
+      text-align: center;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 8px;
+      border-left: 4px solid #10b981;
+    }
+
+    .credentials-container {
+      margin: 24px 0;
+    }
+
+    .credential-item {
+      margin-bottom: 20px;
+      padding: 16px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+
+    .credential-item:hover {
+      border-color: #10b981;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    }
+
+    .credential-item label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .credential-value {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .credential-text {
+      flex: 1;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .password-text {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+
+    .btn-copy {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .btn-copy:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-copy.btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-copy.btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .copy-icon {
+      font-size: 16px;
+    }
+
+    .copy-text {
+      font-size: 14px;
+    }
+
+    .warning-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .warning-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .warning-text {
+      color: #92400e;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .action-buttons .btn-lg {
+      padding: 16px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 180px;
+    }
+
+    .action-buttons .btn-lg:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .action-buttons .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .action-buttons .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+  </style>
+</head>
+
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar (Loaded dynamically from sidebar.html) -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page">
+        <div class="container">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Register Employee</h1>
+              <p class="page-subtitle">Add new employee to the system with face recognition</p>
+            </div>
+          </div>
+
+          <!-- Registration Form Card -->
+          <div class="card animate-fade-in-up">
+            <form id="regForm" autocomplete="off">
+              <div class="form-grid grid grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label for="full_name">Full Name *</label>
+                  <input type="text" id="full_name" name="full_name" required placeholder="Enter full name">
+                </div>
+
+                <div class="form-group">
+                  <label for="emp_id">Employee ID *</label>
+                <input type="text" id="emp_id" name="emp_id" readonly required placeholder="Loading..."></div>
+
+                <div class="form-group">
+                  <label for="password">Temporary Password *</label>
+                  <input type="text" id="password" name="password" readonly>
+                </div>
+                <div class="form-group">
+                  <label for="mobile">Mobile Number *</label>
+                  <input type="tel" id="mobile" name="mobile" required placeholder="Enter mobile number">
+                </div>
+
+                <div class="form-group">
+                  <label for="email">Email Address</label>
+                  <input type="email" id="email" name="email" placeholder="Enter email address">
+                </div>
+
+                <div class="form-group">
+                  <label for="designation">Designation *</label>
+                  <select id="designation" name="designation" required>
+                    <option value="">Select Designation</option>
+                    
+                    <optgroup label="📱 App Development">
+                      <option value="App Developer">App Developer</option>
+                      <option value="Android App Developer">Android App Developer</option>
+                      <option value="Flutter App Developer">Flutter App Developer</option>
+                      <option value="iOS App Developer">iOS App Developer</option>
+                      <option value="React Native Developer">React Native Developer</option>
+                    </optgroup>
+                    
+                    <optgroup label="🌐 Web Development">
+                      <option value="Web Developer">Web Developer</option>
+                      <option value="Frontend Developer">Frontend Developer</option>
+                      <option value="Backend Developer">Backend Developer</option>
+                      <option value="Full Stack Developer">Full Stack Developer</option>
+                    </optgroup>
+                    
+                    <optgroup label="🎨 Design & UX">
+                      <option value="UI/UX Designer">UI/UX Designer</option>
+                      <option value="UI Designer">UI Designer</option>
+                      <option value="UX Designer">UX Designer</option>
+                      <option value="Graphic Designer">Graphic Designer</option>
+                    </optgroup>
+                    
+                    <optgroup label="📊 Management & Analysis">
+                      <option value="Project Manager">Project Manager</option>
+                      <option value="Product Manager">Product Manager</option>
+                      <option value="Business Analyst">Business Analyst</option>
+                      <option value="Data Analyst">Data Analyst</option>
+                      <option value="Scrum Master">Scrum Master</option>
+                    </optgroup>
+                    
+                    <optgroup label="⚙️ Engineering & Infrastructure">
+                      <option value="DevOps Engineer">DevOps Engineer</option>
+                      <option value="QA Engineer">QA Engineer</option>
+                      <option value="Software Tester">Software Tester</option>
+                      <option value="System Administrator">System Administrator</option>
+                      <option value="Network Engineer">Network Engineer</option>
+                      <option value="Database Administrator">Database Administrator</option>
+                      <option value="Cloud Engineer">Cloud Engineer</option>
+                      <option value="Security Engineer">Security Engineer</option>
+                    </optgroup>
+                    
+                    
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="joining_date">Joining Date</label>
+                  <input type="date" id="joining_date" name="joining_date">
+                </div>
+                <div class="form-group">
+                  <label for="address">Address</label>
+                  <textarea id="address" name="address" rows="3" required placeholder="Enter address"></textarea>
+                </div>
+                
+                <div class="form-group">
+                  <label for="status">Status</label>
+                  <select id="status" name="status">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <!-- Face Capture Section -->
+              <div class="form-section">
+                <h3>📷 Face Capture (Required for Attendance)</h3>
+                
+                <div class="camera-simple-container">
+                  <div class="camera-preview-simple">
+                    <video id="popupVideo" autoplay playsinline muted style="display:block; width: 200px; height: 150px; object-fit: cover; border-radius: 8px; background: #000;"></video>
+                    <img id="capturedImgSimple" alt="Captured face" style="display:block; border-radius:8px; object-fit:cover; width:200px; height:150px;" />
+                    <div class="camera-placeholder-simple" id="cameraPlaceholder">
+                      <div class="camera-icon-simple">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="var(--color-text-secondary)">
+                          <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+                        </svg>
+                      </div>
+                      <p>No face captured</p>
+                    </div>
+                  </div>
+                  
+                  <div class="camera-controls-simple">
+                    <button type="button" class="btn btn-gradient-primary btn-lg" id="btnOpenCamera" onclick="openCameraPopup()">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                      </svg>
+                      Open Camera
+                    </button>
+                    <button type="button" class="btn btn-gradient-primary btn-lg" id="btnCapture" onclick="captureFromPopup()" style="display:none;">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      Capture
+                    </button>
+                  </div>
+                  
+                  <div id="faceStatusSimple" class="status-message">No face captured yet</div>
+                </div>
+              </div>
+
+              <!-- Hidden field for captured image -->
+              <input type="hidden" id="employee_photo_data" name="employee_photo_data">
+
+              <!-- Form Actions -->
+              <div class="form-actions">
+                <div id="regMsg" class="alert" style="display:none;"></div>
+                <button type="submit" class="btn btn-gradient-primary btn-lg" id="submitBtn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  Register Employee
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="successModal" style="display:none;">
+    <div class="modal success-modal">
+      <div class="modal-header success-header">
+        <div class="success-icon">🎉</div>
+        <h3>Employee Registered Successfully!</h3>
+      </div>
+      <div class="modal-body">
+        <div class="success-message">
+          <p><strong>🎯 Registration Complete!</strong></p>
+          <p>Please save these login credentials securely:</p>
+        </div>
+        
+        <div class="credentials-container">
+          <div class="credential-item">
+            <label><strong>👤 Employee ID:</strong></label>
+            <div class="credential-value">
+              <span id="modalEmpId" class="credential-text"></span>
+              <button type="button" class="btn btn-copy btn-primary" onclick="copyToClipboard('modalEmpId', event)">
+                <span class="copy-icon">📋</span>
+                <span class="copy-text">Copy ID</span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="credential-item password-item">
+            <label><strong>🔑 Temporary Password:</strong></label>
+            <div class="credential-value">
+              <span id="modalPassword" class="credential-text password-text"></span>
+              <button type="button" class="btn btn-copy btn-success" id="copyPasswordBtn" onclick="copyPassword()">
+                <span class="copy-icon">📋</span>
+                <span class="copy-text">Copy Password</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="warning-box">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-text">
+            <strong>Important:</strong> The employee must change this password on first login for security reasons.
+          </div>
+        </div>
+        
+        <div class="action-buttons">
+          <button type="button" class="btn btn-lg btn-primary" onclick="copyAllCredentials()">
+            📋 Copy All Credentials
+          </button>
+          <button type="button" class="btn btn-lg btn-secondary" onclick="closeSuccessModal()">
+            ✅ Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script src="js/responsive.js"></script>
+  <script src="js/pages.js"></script>
+  <script>
+    let stream = null;
+    let capturedB64 = null;
+
+    // Function to fetch next available Employee ID
+    async function fetchNextEmployeeId() {
+      console.log('Starting fetchNextEmployeeId...');
+      try {
+        console.log('Making request to http://localhost:5000/api/employees/next-id');
+        const response = await fetch('http://localhost:5000/api/employees/next-id');
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Employee ID response:', data);
+        
+        if (data.success && data.emp_id) {
+          console.log('Setting Employee ID to:', data.emp_id);
+          const empIdField = document.getElementById('emp_id');
+          empIdField.value = data.emp_id;
+          empIdField.placeholder = data.emp_id;
+          
+          // Visual confirmation
+          empIdField.style.borderColor = '#2196F3';
+          setTimeout(() => {
+            empIdField.style.borderColor = '';
+          }, 1000);
+        } else {
+          console.log('API returned no success, using fallback');
+          // Fallback if API fails
+          const empIdField = document.getElementById('emp_id');
+          empIdField.value = 'emp001';
+          empIdField.placeholder = 'emp001';
+        }
+      } catch (error) {
+        console.error('Error fetching next employee ID:', error);
+        console.log('Using fallback emp001');
+        // Fallback
+        const empIdField = document.getElementById('emp_id');
+        empIdField.value = 'emp001';
+        empIdField.placeholder = 'emp001';
+      }
+    }
+
+async function openCameraPopup() {
+  try {
+    const video = document.getElementById('popupVideo');
+    const placeholder = document.getElementById('cameraPlaceholder');
+    const captureBtn = document.getElementById('btnCapture');
+    const openBtn = document.getElementById('btnOpenCamera');
+
+    if (stream) return;
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    });
+
+    video.srcObject = stream;
+    video.muted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    video.onloadedmetadata = () => {
+      video.play().catch(err => {
+        console.error("Video play error:", err);
+      });
+    };
+
+    // Show video, hide placeholder, show capture button, hide open button
+    video.style.display = 'block';
+    placeholder.style.display = 'none';
+    captureBtn.style.display = 'inline-flex';
+    openBtn.style.display = 'none';
+
+    document.getElementById('faceStatusSimple').textContent = 'Camera active — click Capture to take photo';
+    document.getElementById('faceStatusSimple').className = 'status-message status-info';
+
+  } catch (e) {
+    console.error('Camera error:', e);
+    alert('Cannot access camera: ' + e.message);
+  }
+}    
+     
+    function closeCameraModal() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      
+      document.getElementById('cameraModal').style.display = 'none';
+      document.getElementById('popupVideo').style.display = 'none';
+    }
+
+    async function captureFromPopup() {
+      try {
+        const video = document.getElementById('popupVideo');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        
+        capturedB64 = canvas.toDataURL('image/jpeg', 0.9);
+        
+        // Update simple preview
+        const img = document.getElementById('capturedImgSimple');
+        img.src = capturedB64;
+        img.style.display = 'block';
+        
+        // Hide video and capture button, show placeholder
+        video.style.display = 'none';
+        document.getElementById('btnCapture').style.display = 'none';
+        document.getElementById('cameraPlaceholder').style.display = 'none';
+        
+        // Update status
+        document.getElementById('faceStatusSimple').textContent = 'Face captured successfully!';
+        document.getElementById('faceStatusSimple').className = 'status-message status-success';
+        
+        // Update hidden field
+        document.getElementById('employee_photo_data').value = capturedB64;
+        
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+      } catch (e) {
+        console.error('Capture error:', e);
+        alert('Failed to capture face: ' + e.message);
+      }
+    }
+
+    function copyPassword() {
+      console.log('Copy password function called');
+      
+      const passwordElement = document.getElementById('modalPassword');
+      console.log('Password element:', passwordElement);
+      
+      if (!passwordElement) {
+        console.log('Password element not found');
+        alert('Password element not found');
+        return;
+      }
+      
+      const passwordText = passwordElement.textContent || passwordElement.innerText || '';
+      console.log('Password text:', passwordText);
+      
+      if (!passwordText || passwordText.trim() === '') {
+        console.log('Password not available, showing alert');
+        alert('Password not available. Please wait for registration to complete.');
+        return;
+      }
+      
+      console.log('Password found, copying to clipboard:', passwordText);
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(passwordText).then(() => {
+          console.log('Clipboard API successful');
+          showPasswordCopySuccess();
+        }).catch(err => {
+          console.error('Clipboard API failed:', err);
+          fallbackCopyPassword(passwordText);
+        });
+      } else {
+        // Fallback for older browsers
+        console.log('Using fallback copy method');
+        fallbackCopyPassword(passwordText);
+      }
+    }
+    
+    function fallbackCopyPassword(text) {
+      try {
+        // Create temporary textarea
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        textarea.style.top = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+          showPasswordCopySuccess();
+        } else {
+          alert('Failed to copy password. Please copy manually.');
+        }
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+        alert('Failed to copy password. Please copy manually.');
+      }
+    }
+    
+    function showPasswordCopySuccess() {
+      const copyBtn = document.getElementById('copyPasswordBtn');
+      const originalHTML = copyBtn.innerHTML;
+      copyBtn.innerHTML = '<span class="copy-icon">✅</span><span class="copy-text">Copied!</span>';
+      copyBtn.style.background = '#059669';
+      setTimeout(() => {
+        copyBtn.innerHTML = originalHTML;
+        copyBtn.style.background = '';
+      }, 2000);
+    }
+
+    function copyToClipboard(elementId, event) {
+      const text = document.getElementById(elementId).textContent;
+      
+      if (!text) {
+        alert('Content not available to copy');
+        return;
+      }
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = event.target.closest('.btn-copy');
+          const originalHTML = btn.innerHTML;
+          btn.innerHTML = '<span class="copy-icon">✅</span><span class="copy-text">Copied!</span>';
+          btn.style.background = '#059669';
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.background = '';
+          }, 2000);
+        }).catch(err => {
+          alert('Failed to copy: ' + err.message);
+        });
+      } else {
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          const btn = event.target.closest('.btn-copy');
+          const originalHTML = btn.innerHTML;
+          btn.innerHTML = '<span class="copy-icon">✅</span><span class="copy-text">Copied!</span>';
+          btn.style.background = '#059669';
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.background = '';
+          }, 2000);
+        } catch (err) {
+          alert('Failed to copy: ' + err.message);
+        }
+        document.body.removeChild(textarea);
+      }
+    }
+
+    function copyAllCredentials(event) {
+      const empId = document.getElementById('modalEmpId').textContent;
+      const password = document.getElementById('modalPassword').textContent;
+      
+      if (!empId || !password) {
+        alert('Credentials not available. Please wait for registration to complete.');
+        return;
+      }
+      
+      const allCredentials = `Employee ID: ${empId}\nPassword: ${password}`;
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(allCredentials).then(() => {
+          // Show success feedback
+          const btn = event.target;
+          const originalHTML = btn.innerHTML;
+          btn.innerHTML = '<span class="copy-icon">✅</span><span class="copy-text">All Copied!</span>';
+          btn.style.background = '#059669';
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.background = '';
+          }, 2000);
+        }).catch(err => {
+          alert('Failed to copy credentials: ' + err.message);
+        });
+      } else {
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = allCredentials;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          const btn = event.target;
+          const originalHTML = btn.innerHTML;
+          btn.innerHTML = '<span class="copy-icon">✅</span><span class="copy-text">All Copied!</span>';
+          btn.style.background = '#059669';
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.background = '';
+          }, 2000);
+        } catch (err) {
+          alert('Failed to copy credentials: ' + err.message);
+        }
+        document.body.removeChild(textarea);
+      }
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').style.display = 'none';
+      document.getElementById('regForm').reset();
+      retake();
+    }
+
+    function generatePassword() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@$#.';
+      let password = '';
+      
+      // Ensure at least one of each required character type
+      password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]; // uppercase
+      password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]; // lowercase
+      password += '0123456789'[Math.floor(Math.random() * 10)]; // digit
+      password += '@$#.'[Math.floor(Math.random() * 4)]; // special char
+      
+      // Add 4 more random characters to make 8 total
+      for (let i = 0; i < 4; i++) {
+        password += chars[Math.floor(Math.random() * chars.length)];
+      }
+      
+      // Shuffle the password
+      password = password.split('').sort(() => Math.random() - 0.5).join('');
+      
+        const passwordField = document.getElementById('password');
+        if (passwordField) {
+             passwordField.value = password;
+        }   
+    }
+
+    // Form submission
+    document.getElementById('regForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const regMsg = document.getElementById('regMsg');
+      
+      // Validate required fields
+      const fullName = document.getElementById('full_name').value.trim();
+      const empId = document.getElementById('emp_id').value.trim();
+      const mobile = document.getElementById('mobile').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const designation = document.getElementById('designation').value;
+      const address = document.getElementById('address').value.trim();
+      const photoData = document.getElementById('employee_photo_data').value;
+      
+      // Check all required fields are filled
+      if (!fullName || !empId || !mobile || !designation || !address) {
+        regMsg.textContent = 'Please fill all required fields (Full Name, Employee ID, Mobile Number, Designation, Address)';
+        regMsg.className = 'alert alert-danger';
+        regMsg.style.display = 'block';
+        return;
+      }
+      
+      // Validate mobile number - must be exactly 10 digits
+      const mobileRegex = /^\d{10}$/;
+      if (!mobileRegex.test(mobile)) {
+        regMsg.textContent = 'Mobile number must be exactly 10 digits';
+        regMsg.className = 'alert alert-danger';
+        regMsg.style.display = 'block';
+        return;
+      }
+      
+      // Validate email pattern if email is provided
+      if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          regMsg.textContent = 'Please enter a valid email address';
+          regMsg.className = 'alert alert-danger';
+          regMsg.style.display = 'block';
+          return;
+        }
+      }
+      
+      if (!photoData) {
+        regMsg.textContent = 'Please capture face photo';
+        regMsg.className = 'alert alert-danger';
+        regMsg.style.display = 'block';
+        return;
+      }
+      
+      // Show loading
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = 'Registering...';
+      regMsg.style.display = 'none';
+      
+      try {
+        const jsonData = {
+          full_name: fullName,
+          emp_id: empId,
+          mobile: mobile,
+          email: document.getElementById('email').value,
+          designation: designation,
+          joining_date: document.getElementById('joining_date').value,
+          address: document.getElementById('address').value,
+          role: "Employee",
+          status: document.getElementById('status').value,
+          password: document.getElementById('password').value,
+          face_image: photoData
+        };
+        
+        const response = await fetch('http://localhost:5000/api/employees', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(jsonData)
+        });
+        
+        const result = await response.json();
+        console.log("API RESULT:", result);        
+        if (result.success) {
+          // Show success modal
+          document.getElementById('modalEmpId').textContent = result.emp_id;
+          document.getElementById('modalPassword').textContent = result.temp_password;
+          document.getElementById('successModal').style.display = 'block';
+          
+          // Reset form
+          document.getElementById('regForm').reset();
+          retake();
+          
+        } else {
+          regMsg.textContent = result.message || 'Registration failed';
+          regMsg.className = 'alert alert-danger';
+          regMsg.style.display = 'block';
+        }
+        
+      } catch (error) {
+        console.error('Registration error:', error);
+        regMsg.textContent = 'Registration failed. Please try again.';
+        regMsg.className = 'alert alert-danger';
+        regMsg.style.display = 'block';
+      }
+      
+      // Reset button
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Register Employee';
+    });
+
+    function retake() {
+      // Reset camera section
+      const video = document.getElementById('popupVideo');
+      const img = document.getElementById('capturedImgSimple');
+      const placeholder = document.getElementById('cameraPlaceholder');
+      const captureBtn = document.getElementById('btnCapture');
+      const openBtn = document.getElementById('btnOpenCamera');
+      
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      
+      video.style.display = 'none';
+      img.style.display = 'none';
+      placeholder.style.display = 'flex';
+      captureBtn.style.display = 'none';
+      openBtn.style.display = 'inline-flex';
+      
+      document.getElementById('faceStatusSimple').textContent = 'No face captured yet';
+      document.getElementById('faceStatusSimple').className = 'status-message';
+      document.getElementById('employee_photo_data').value = '';
+    }
+
+    
+   document.addEventListener('DOMContentLoaded', async function() {
+
+  console.log('=== PAGE LOADED ===');
+
+  document.getElementById('joining_date').valueAsDate = new Date();
+  generatePassword();
+
+  const empIdField = document.getElementById('emp_id');
+
+  // STEP 1 — Show loading state
+  empIdField.value = "";
+  empIdField.placeholder = "Loading...";
+
+  // STEP 2 — Fetch next employee ID
+  try {
+    const response = await fetch('http://localhost:5000/api/employees/next-id');
+
+    if (!response.ok) {
+      throw new Error('API failed');
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.emp_id) {
+      empIdField.value = data.emp_id;
+      empIdField.placeholder = data.emp_id;
+
+      console.log("Employee ID Loaded:", data.emp_id);
+    } else {
+      empIdField.placeholder = "emp001";
+    }
+
+  } catch (err) {
+    console.error("Employee ID Fetch Error:", err);
+    empIdField.placeholder = "emp001";
+  }
+
+});
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Profile • OffiAttend</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+        }
+        .admin-details-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .admin-photo-section {
+            padding: 30px;
+            text-align: center;
+        }
+        .photo-upload-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .photo-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .upload-btn, .delete-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .upload-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+        }
+        .upload-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        .delete-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+        .upload-btn:disabled, .delete-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .upload-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        .upload-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 8px 16px;
+            border: 1px solid #3b82f6;
+            background: white;
+            color: #3b82f6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .upload-pane {
+            display: none;
+        }
+        .upload-pane.active {
+            display: block;
+        }
+        .camera-preview {
+            width: 320px;
+            height: 240px;
+            background: #000;
+            border-radius: 8px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .camera-preview video,
+        .camera-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        .message.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #10b981;
+        }
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .admin-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #3b82f6;
+            margin-bottom: 15px;
+        }
+        .no-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #94a3b8;
+            border: 4px solid #e2e8f0;
+            margin-bottom: 15px;
+        }
+        .admin-info {
+            padding: 30px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #64748b;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 20px;
+        }
+        .back-link:hover {
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar (Loaded dynamically from sidebar.html) -->
+        <div id="sidebar-container"></div>
+        
+        <main class="main-content">
+            <div class="page">
+                <div class="container">
+                    
+                    <div class="admin-details-container">
+                        <div class="admin-header">
+                            <h1 id="employee-name-header">Employee Profile</h1>
+                        </div>
+                        
+                        <div class="admin-photo-section">
+                            <div class="photo-upload-container">
+                                <div id="photo-container"></div>
+                                <div class="photo-actions">
+                                    <button class="upload-btn" onclick="openUploadModal()">📸 Upload Photo</button>
+                                    <button class="delete-btn" onclick="deletePhoto()" id="deleteBtn" style="display: none;">🗑️ Delete Photo</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden file input for upload -->
+                        <input type="file" id="fileInput" accept="image/*" onchange="fileChosen(event)" style="display: none;">
+                        
+                        <div id="employee-content" style="display: none;">
+                            <div class="admin-info">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Employee ID</div>
+                                        <div class="info-value" id="employee-emp-id"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Full Name</div>
+                                        <div class="info-value" id="employee-full-name"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Email</div>
+                                        <div class="info-value" id="employee-email"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Mobile</div>
+                                        <div class="info-value" id="employee-mobile"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Designation</div>
+                                        <div class="info-value" id="employee-designation"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Status</div>
+                                        <div class="info-value" id="employee-status"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Joining Date</div>
+                                        <div class="info-value" id="employee-joining-date"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Address</div>
+                                        <div class="info-value" id="employee-address"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/pages.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        // Load employee details
+        async function loadEmployeeDetails() {
+            try {
+                console.log('Loading employee details...');
+                
+                const user = window.OfficeApp && window.OfficeApp.currentUser();
+                if (!user || (user.role || '').toLowerCase() !== 'employee') {
+                    console.error('Not authenticated as employee');
+                    document.getElementById('employee-content').innerHTML = '<p style="text-align: center; padding: 50px; color: #dc2626;">Not authenticated as employee. Please login again.</p>';
+                    document.getElementById('employee-content').style.display = 'block';
+                    return;
+                }
+                
+                console.log('Current user:', user);
+                
+                const empId = user.emp_id;
+                if (!empId) {
+                    console.error('Employee ID not found');
+                    document.getElementById('employee-content').innerHTML = '<p style="text-align: center; padding: 50px; color: #dc2626;">Employee ID not found. Please login again.</p>';
+                    document.getElementById('employee-content').style.display = 'block';
+                    return;
+                }
+                
+                try {
+                    console.log(`Trying employee profile for emp_id: ${empId}`);
+                    const response = await fetch(`${API_BASE}/profile/${empId}`);
+                    const data = await response.json();
+                    console.log(`Response for ${empId}:`, data);
+                    
+                    if (data.success && data.profile) {
+                        displayEmployeeDetails(data.profile);
+                    } else {
+                        console.error('Employee not found');
+                        // Show fallback with session data
+                        displayFallbackProfile(user);
+                    }
+                } catch (error) {
+                    console.log(`Failed for ${empId}:`, error);
+                    // Show fallback with session data
+                    displayFallbackProfile(user);
+                }
+                
+            } catch (error) {
+                console.error('Error loading employee details:', error);
+                document.getElementById('employee-content').innerHTML = '<p style="text-align: center; padding: 50px; color: #dc2626;">Error loading profile. Please try again.</p>';
+                document.getElementById('employee-content').style.display = 'block';
+            }
+        }
+        
+        // Display employee details
+        function displayEmployeeDetails(employee) {
+            // Update header with employee name
+            const employeeName = employee.full_name || employee.username || 'Employee';
+            document.getElementById('employee-name-header').textContent = `${employeeName}'s Profile`;
+            
+            // Update photo
+            const initials = (employee.full_name || 'Unknown').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            const photoContainer = document.getElementById('photo-container');
+            
+            if (employee.profile_pic_path) {
+                const photoUrl = `http://localhost:5000/${employee.profile_pic_path.replace(/\\/g, '/')}`;
+                photoContainer.innerHTML = `
+                    <img class="admin-photo" src="${photoUrl}" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" 
+                         alt="${employee.full_name}">
+                    <div class="no-photo" style="display:none;">${initials}</div>
+                `;
+                // Show update and remove buttons if photo exists
+                document.getElementById('deleteBtn').style.display = 'inline-block';
+                document.getElementById('deleteBtn').textContent = '🗑️ Remove Photo';
+                // Update upload button to show "Update Photo"
+                const uploadBtn = document.querySelector('.upload-btn');
+                if (uploadBtn) {
+                    uploadBtn.textContent = '🔄 Update Photo';
+                }
+            } else {
+                photoContainer.innerHTML = `<div class="no-photo">${initials}</div>`;
+                // Hide remove button and show upload button if no photo
+                document.getElementById('deleteBtn').style.display = 'none';
+                const uploadBtn = document.querySelector('.upload-btn');
+                if (uploadBtn) {
+                    uploadBtn.textContent = '📸 Upload Photo';
+                }
+            }
+            
+            // Update info grid from database
+            const empIdEl = document.getElementById('employee-emp-id');
+            const fullNameEl = document.getElementById('employee-full-name');
+            const emailEl = document.getElementById('employee-email');
+            const mobileEl = document.getElementById('employee-mobile');
+            const designationEl = document.getElementById('employee-designation');
+            const statusEl = document.getElementById('employee-status');
+            const joiningDateEl = document.getElementById('employee-joining-date');
+            const addressEl = document.getElementById('employee-address');
+            
+            if (empIdEl) empIdEl.textContent = employee.emp_id || '—';
+            if (fullNameEl) fullNameEl.textContent = employee.full_name || '—';
+            if (emailEl) emailEl.textContent = employee.email || '—';
+            if (mobileEl) mobileEl.textContent = employee.mobile || '—';
+            if (designationEl) designationEl.textContent = employee.designation || '—';
+            if (statusEl) {
+                const statusBadge = '<span class="badge badge-approved">Active</span>';
+                statusEl.innerHTML = statusBadge;
+            }
+            if (joiningDateEl) {
+                if (employee.joining_date) {
+                    // Format date to remove GMT and time, show only date in DD-MM-YYYY format
+                    try {
+                        const date = new Date(employee.joining_date);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                        joiningDateEl.textContent = `${day}-${month}-${year}`;
+                    } catch (e) {
+                        joiningDateEl.textContent = employee.joining_date.split('T')[0] || '—';
+                    }
+                } else {
+                    joiningDateEl.textContent = '—';
+                }
+            }
+            if (addressEl) addressEl.textContent = employee.address || '—';
+            
+            // Show employee content
+            const employeeContent = document.getElementById('employee-content');
+            if (employeeContent) {
+                employeeContent.style.display = 'block';
+            }
+        }
+        
+        // Fallback profile display using session data
+        function displayFallbackProfile(user) {
+            console.log('Using fallback profile for:', user);
+            
+            // Update header
+            document.getElementById('employee-name-header').textContent = 'Employee Profile';
+            
+            // Update photo
+            const initials = (user.name || 'Unknown').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            const photoContainer = document.getElementById('photo-container');
+            photoContainer.innerHTML = `<div class="no-photo">${initials}</div>`;
+            
+            // Update info grid with available session data
+            const empIdEl = document.getElementById('employee-emp-id');
+            const fullNameEl = document.getElementById('employee-full-name');
+            const emailEl = document.getElementById('employee-email');
+            const mobileEl = document.getElementById('employee-mobile');
+            const designationEl = document.getElementById('employee-designation');
+            const statusEl = document.getElementById('employee-status');
+            const joiningDateEl = document.getElementById('employee-joining-date');
+            const addressEl = document.getElementById('employee-address');
+            
+            if (empIdEl) empIdEl.textContent = user.emp_id || '—';
+            if (fullNameEl) fullNameEl.textContent = user.name || '—';
+            if (emailEl) emailEl.textContent = user.email || '—';
+            if (mobileEl) mobileEl.textContent = '—';
+            if (designationEl) designationEl.textContent = '—';
+            if (statusEl) {
+                const statusBadge = '<span class="badge badge-approved">Active</span>';
+                statusEl.innerHTML = statusBadge;
+            }
+            if (joiningDateEl) joiningDateEl.textContent = '—';
+            if (addressEl) addressEl.textContent = '—';
+            
+            // Show content
+            const employeeContent = document.getElementById('employee-content');
+            if (employeeContent) {
+                employeeContent.style.display = 'block';
+            }
+        }
+        
+        // Photo upload variables
+        let pendingImageData = null;
+        let currentEmployeeData = null;
+        
+        // Upload Modal Functions
+        function openUploadModal() {
+            // Directly open file explorer
+            document.getElementById('fileInput').click();
+        }
+        
+        function closeUploadModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+            resetUploadModal();
+            stopCamera();
+        }
+        
+        function resetUploadModal() {
+            // Reset file input
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('uploadFileBtn').disabled = true;
+            document.getElementById('uploadCamBtn').disabled = true;
+            
+            // Reset camera
+            stopCamera();
+            document.getElementById('cameraFeed').style.display = 'none';
+            document.getElementById('capturedImg').style.display = 'none';
+            document.getElementById('cameraPlaceholder').style.display = 'flex';
+            document.getElementById('openCamBtn').style.display = 'inline-block';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('retakeBtn').style.display = 'none';
+            
+            // Reset tabs
+            switchTab('file');
+            
+            // Clear messages
+            document.getElementById('uploadMessage').innerHTML = '';
+            
+            // Clear pending data
+            pendingImageData = null;
+        }
+        
+        function switchTab(tab) {
+            const filePane = document.getElementById('filePane');
+            const camPane = document.getElementById('camPane');
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            
+            if (tab === 'file') {
+                filePane.classList.add('active');
+                camPane.classList.remove('active');
+                tabBtns[0].classList.add('active');
+                tabBtns[1].classList.remove('active');
+            } else {
+                filePane.classList.remove('active');
+                camPane.classList.add('active');
+                tabBtns[0].classList.remove('active');
+                tabBtns[1].classList.add('active');
+            }
+            
+            // Reset pending data when switching tabs
+            pendingImageData = null;
+            document.getElementById('uploadFileBtn').disabled = true;
+            document.getElementById('uploadCamBtn').disabled = true;
+        }
+        
+        function fileChosen(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                pendingImageData = e.target.result;
+                // Auto-upload when file is selected
+                uploadPhoto();
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        async function openCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    },
+                    audio: false
+                };
+                
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                document.getElementById('cameraPlaceholder').style.display = 'none';
+                const video = document.getElementById('cameraFeed');
+                
+                video.srcObject = cameraStream;
+                video.style.display = 'block';
+                
+                document.getElementById('openCamBtn').style.display = 'none';
+                document.getElementById('captureBtn').style.display = 'inline-block';
+                
+                showUploadMessage('Camera opened successfully', true);
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                let errorMessage = 'Camera error: ';
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    errorMessage += 'Camera permission denied. Please allow camera access and try again.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage += 'No camera found. Please connect a camera and try again.';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage += 'Camera is already in use by another application.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                showUploadMessage(errorMessage, false);
+            }
+        }
+        
+        function capturePhoto() {
+            const video = document.getElementById('cameraFeed');
+            const canvas = document.createElement('canvas');
+            
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            pendingImageData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            stopCamera();
+            
+            video.style.display = 'none';
+            const capturedImg = document.getElementById('capturedImg');
+            capturedImg.src = pendingImageData;
+            capturedImg.style.display = 'block';
+            
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('retakeBtn').style.display = 'inline-block';
+            document.getElementById('uploadCamBtn').disabled = false;
+            
+            showUploadMessage('Photo captured successfully', true);
+        }
+        
+        function retakePhoto() {
+            pendingImageData = null;
+            
+            document.getElementById('capturedImg').style.display = 'none';
+            document.getElementById('retakeBtn').style.display = 'none';
+            document.getElementById('openCamBtn').style.display = 'inline-block';
+            document.getElementById('uploadCamBtn').disabled = true;
+            document.getElementById('cameraPlaceholder').style.display = 'flex';
+        }
+        
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+        }
+        
+        async function uploadPhoto() {
+            if (!currentEmployeeData || !currentEmployeeData.emp_id) {
+                console.error('No employee data available for delete');
+                return;
+            }
+            
+            console.log('Attempting to upload photo for employee:', currentEmployeeData.emp_id);
+            
+            try {
+                const response = await fetch(`${API_BASE}/employees/${currentEmployeeData.emp_id}/upload-profile`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: pendingImageData })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show new photo immediately
+                    const photoContainer = document.getElementById('photo-container');
+                    const initials = (currentEmployeeData.full_name || 'Unknown').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                    
+                    photoContainer.innerHTML = `
+                        <img class="admin-photo" src="${pendingImageData}" 
+                             alt="${currentEmployeeData.full_name}">
+                        <div class="no-photo" style="display:none;">${initials}</div>
+                    `;
+                    
+                    // Update buttons to show update/remove options
+                    document.getElementById('deleteBtn').style.display = 'inline-block';
+                    document.getElementById('deleteBtn').textContent = '🗑️ Remove Photo';
+                    const uploadBtn = document.querySelector('.upload-btn');
+                    if (uploadBtn) {
+                        uploadBtn.textContent = '🔄 Update Photo';
+                    }
+                    
+                    console.log('✓ Profile photo updated successfully!');
+                } else {
+                    console.error('Upload failed:', data.error);
+                    alert('Failed to upload photo: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Server error. Please try again.');
+            } finally {
+                // Reset file input
+                document.getElementById('fileInput').value = '';
+                pendingImageData = null;
+            }
+        }
+        
+        async function deletePhoto() {
+            alert('Delete button clicked!');
+            
+            if (!currentEmployeeData || !currentEmployeeData.emp_id) {
+                console.error('No employee data available for delete');
+                return;
+            }
+            
+            const empId = currentEmployeeData.emp_id;
+            console.log('Attempting to delete photo for employee:', empId);
+            console.log('Current employee data:', currentEmployeeData);
+            
+            try {
+                const deleteUrl = `${API_BASE}/employees/${empId}/delete-profile`;
+                console.log('Delete URL:', deleteUrl);
+                
+                const response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Delete response status:', response.status);
+                console.log('Delete response headers:', response.headers);
+                
+                const data = await response.json();
+                console.log('Delete response data:', data);
+                
+                if (data.success) {
+                    // Show initials immediately
+                    const photoContainer = document.getElementById('photo-container');
+                    const initials = (currentEmployeeData.full_name || 'Unknown').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                    
+                    photoContainer.innerHTML = `<div class="no-photo">${initials}</div>`;
+                    
+                    // Update buttons to show upload only
+                    document.getElementById('deleteBtn').style.display = 'none';
+                    const uploadBtn = document.querySelector('.upload-btn');
+                    if (uploadBtn) {
+                        uploadBtn.textContent = '📸 Upload Photo';
+                    }
+                    
+                    console.log('✓ Profile photo removed successfully!');
+                } else {
+                    console.error('Failed to remove photo:', data.error);
+                    alert('Failed to remove photo: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Delete error details:', error);
+                console.error('Delete error stack:', error.stack);
+                alert('Server error. Please try again. Check console for details.');
+            }
+        }
+        
+        // Update displayEmployeeDetails to store current data and show delete button
+        function displayEmployeeDetails(employee) {
+            currentEmployeeData = employee; // Store for upload/delete functions
+            
+            // Update header with employee name
+            const employeeName = employee.full_name || employee.username || 'Employee';
+            document.getElementById('employee-name-header').textContent = `${employeeName}'s Profile`;
+            
+            // Update photo
+            const initials = (employee.full_name || 'Unknown').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            const photoContainer = document.getElementById('photo-container');
+            
+            if (employee.profile_pic_path) {
+                const photoUrl = `http://localhost:5000/${employee.profile_pic_path.replace(/\\/g, '/')}`;
+                photoContainer.innerHTML = `
+                    <img class="admin-photo" src="${photoUrl}" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" 
+                         alt="${employee.full_name}">
+                    <div class="no-photo" style="display:none;">${initials}</div>
+                `;
+                // Show update and remove buttons if photo exists
+                document.getElementById('deleteBtn').style.display = 'inline-block';
+                document.getElementById('deleteBtn').textContent = '🗑️ Remove Photo';
+                // Update upload button to show "Update Photo"
+                const uploadBtn = document.querySelector('.upload-btn');
+                if (uploadBtn) {
+                    uploadBtn.textContent = '🔄 Update Photo';
+                }
+            } else {
+                photoContainer.innerHTML = `<div class="no-photo">${initials}</div>`;
+                // Hide remove button and show upload button if no photo
+                document.getElementById('deleteBtn').style.display = 'none';
+                const uploadBtn = document.querySelector('.upload-btn');
+                if (uploadBtn) {
+                    uploadBtn.textContent = '📸 Upload Photo';
+                }
+            }
+            
+            // Update info grid from database
+            const empIdEl = document.getElementById('employee-emp-id');
+            const fullNameEl = document.getElementById('employee-full-name');
+            const emailEl = document.getElementById('employee-email');
+            const mobileEl = document.getElementById('employee-mobile');
+            const designationEl = document.getElementById('employee-designation');
+            const statusEl = document.getElementById('employee-status');
+            const joiningDateEl = document.getElementById('employee-joining-date');
+            const addressEl = document.getElementById('employee-address');
+            
+            if (empIdEl) empIdEl.textContent = employee.emp_id || '—';
+            if (fullNameEl) fullNameEl.textContent = employee.full_name || '—';
+            if (emailEl) emailEl.textContent = employee.email || '—';
+            if (mobileEl) mobileEl.textContent = employee.mobile || '—';
+            if (designationEl) designationEl.textContent = employee.designation || '—';
+            if (statusEl) {
+                const statusBadge = '<span class="badge badge-approved">Active</span>';
+                statusEl.innerHTML = statusBadge;
+            }
+            if (joiningDateEl) {
+                if (employee.joining_date) {
+                    // Format date to remove GMT and time, show only date in DD-MM-YYYY format
+                    try {
+                        const date = new Date(employee.joining_date);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                        joiningDateEl.textContent = `${day}-${month}-${year}`;
+                    } catch (e) {
+                        joiningDateEl.textContent = employee.joining_date.split('T')[0] || '—';
+                    }
+                } else {
+                    joiningDateEl.textContent = '—';
+                }
+            }
+            if (addressEl) addressEl.textContent = employee.address || '—';
+            
+            // Show employee content
+            const employeeContent = document.getElementById('employee-content');
+            if (employeeContent) {
+                employeeContent.style.display = 'block';
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check authentication
+            const user = window.OfficeApp && window.OfficeApp.currentUser();
+            if (!user || (user.role || '').toLowerCase() !== 'employee') {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Load sidebar and employee details simultaneously
+            if (window.OfficeApp && window.OfficeApp.loadSidebar) {
+                window.OfficeApp.loadSidebar();
+            }
+            
+            // Load employee details immediately (don't wait for sidebar)
+            loadEmployeeDetails();
+        });
+    </script>
+</body>
+
+</html>

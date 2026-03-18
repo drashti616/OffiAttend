@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leave History • OffiAttend</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+      <div class="page">
+        <div class="container">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Leave History</h1>
+              <p class="page-subtitle">View your complete leave application history</p>
+            </div>
+          </div>
+
+          <div class="card fade-in">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">All Leave Requests</h2>
+                <div class="card-subtitle">Complete history of your leave applications with status tracking</div>
+              </div>
+              <div class="card-actions" style="display: flex; gap: var(--space-sm); align-items: center;">
+                <label class="label" style="margin:0; font-weight:600; color:var(--text-light);">Show</label>
+                <select id="filter-status" class="field" style="width: 150px;">
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>From</th>
+                      <th>To</th>
+                      <th>Type</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th>Applied On</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody data-leave-history>
+                    <tr>
+                      <td colspan="7" class="muted">Loading…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Leave Details Modal -->
+  <div class="modal-overlay" id="employeeLeaveDetailsModal" style="display:none;">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>Leave Application Details</h3>
+      </div>
+      <div class="modal-body" style="padding: var(--space-xl);">
+        <div style="background: var(--bg-light); padding: var(--space-lg); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Employee ID</label>
+              <div class="detail-value" id="employee-detail-emp-id" style="font-weight: 600; font-size: var(--font-size-base); color: var(--primary-from);">—</div>
+            </div>
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Leave Type</label>
+              <div class="detail-value" id="employee-detail-leave-type" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">From Date</label>
+              <div class="detail-value" id="employee-detail-from-date" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">To Date</label>
+              <div class="detail-value" id="employee-detail-to-date" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Status</label>
+              <div class="detail-value" id="employee-detail-status" style="font-size: var(--font-size-base);">—</div>
+            </div>
+            <div>
+              <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Applied On</label>
+              <div class="detail-value" id="employee-detail-applied-date" style="font-weight: 500; font-size: var(--font-size-base);">—</div>
+            </div>
+          </div>
+
+          <div>
+            <label class="detail-label" style="display: block; margin-bottom: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-dark); font-weight: 600;">Reason</label>
+            <div class="detail-value" id="employee-detail-reason" style="line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; color: var(--text-dark); font-size: var(--font-size-base);">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: var(--space-lg); display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-gradient-danger" onclick="closeEmployeeLeaveDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/pages.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const tbody = document.querySelector("tbody[data-leave-history]");
+      const filterStatus = document.getElementById("filter-status");
+
+      function load() {
+        const user = window.OfficeApp.currentUser();
+        if (!user) return;
+
+        fetch(`${window.OfficeApp.API_BASE_URL}/leaves?emp_id=${user.emp_id}`)
+          .then(r => r.json())
+          .then(d => {
+            if (!d.success || !d.leaves) {
+              tbody.innerHTML = '<tr><td colspan="6" class="muted">No leave history</td></tr>';
+              return;
+            }
+
+            let rows = d.leaves;
+            const status = (filterStatus?.value || "").trim();
+            if (status) rows = rows.filter(l => (l.status || "") === status);
+
+            tbody.innerHTML = rows.map(l => `
+              <tr>
+                <td>${formatDate(l.from_date) || '—'}</td>
+                <td>${formatDate(l.to_date) || '—'}</td>
+                <td>${l.leave_type || '—'}</td>
+                <td>${(l.reason || '—').substring(0, 40)}${(l.reason || '').length > 40 ? '…' : ''}</td>
+                <td>${window.OfficeApp.fmtBadge?.(l.status) || l.status || '—'}</td>
+                <td>${formatDate(l.created_at) || '—'}</td>
+                <td>
+                  <button class="btn btn-gradient-primary btn-sm" onclick="viewEmployeeLeaveDetails(${JSON.stringify(l).replace(/"/g, '&quot;')})">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    View Details
+                  </button>
+                </td>
+              </tr>
+            `).join("") || '<tr><td colspan="7" class="muted">No records</td></tr>';
+          })
+          .catch(() => { tbody.innerHTML = '<tr><td colspan="6" class="muted">Connection error</td></tr>'; });
+      }
+
+      filterStatus?.addEventListener("change", load);
+      load();
+    });
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+
+      try {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`; // dd-mm-yyyy format
+      } catch (e) {
+        return dateString;
+      }
+    }
+  </script>
+</body>
+
+</html>

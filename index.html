@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>AI Enabled Face Recognition Attendance Management System</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+
+  <link rel="stylesheet" href="css/responsive.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Hero Section */
+
+    .hero {
+
+      background: var(--gradient-hero);
+
+      min-height: 100vh;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      position: relative;
+
+      overflow: hidden;
+
+      padding: var(--space-3xl) 0;
+
+    }
+
+
+
+    .hero::before {
+
+      content: '';
+
+      position: absolute;
+
+      top: 0;
+
+      left: 0;
+
+      right: 0;
+
+      bottom: 0;
+
+      background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+
+      opacity: 0.3;
+
+    }
+
+
+
+    .hero-content {
+
+      position: relative;
+
+      z-index: 1;
+
+      text-align: center;
+
+      color: white;
+
+      max-width: 900px;
+
+      padding: 0 var(--space-lg);
+
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+
+    }
+
+
+
+    .hero-title {
+
+      font-size: var(--font-size-5xl);
+
+      font-weight: 800;
+
+      margin-bottom: var(--space-md);
+
+      letter-spacing: -0.03em;
+
+      line-height: 1.1;
+
+      animation: fadeInUp 0.6s ease-out;
+
+      color: #ffffff;
+
+      text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
+
+    }
+
+
+
+    .hero-subtitle {
+
+      font-size: var(--font-size-xl);
+
+      margin-bottom: var(--space-sm);
+
+      opacity: 1.0;
+
+      animation: fadeInUp 0.6s ease-out 0.1s both;
+
+      color: #ffffff;
+
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+
+      font-weight: 600;
+
+    }
+
+
+
+    .hero-description {
+
+      font-size: var(--font-size-base);
+
+      opacity: 1.0;
+
+      margin-bottom: var(--space-3xl);
+
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+
+      color: #ffffff;
+
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+
+      font-weight: 500;
+
+    }
+
+
+
+    /* Action Buttons */
+
+    .hero-actions {
+
+      display: flex;
+
+      gap: var(--space-lg);
+
+      justify-content: center;
+
+      flex-wrap: wrap;
+
+      animation: fadeInUp 0.6s ease-out 0.3s both;
+
+    }
+
+
+
+    .hero-btn {
+
+      min-width: 240px;
+
+      padding: 20px 40px;
+
+      font-size: var(--font-size-lg);
+
+      font-weight: 700;
+
+      border-radius: var(--radius-xl);
+
+      border: none;
+
+      cursor: pointer;
+
+      transition: all var(--transition-slow);
+
+      text-decoration: none;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: var(--space-md);
+
+      box-shadow: var(--shadow-xl);
+
+    }
+
+
+
+    .hero-btn-primary {
+
+      background: white;
+
+      color: var(--primary-from);
+
+    }
+
+
+
+    .hero-btn-primary:hover {
+
+      transform: translateY(-4px) scale(1.02);
+
+      box-shadow: var(--shadow-2xl);
+
+    }
+
+
+
+    .hero-btn-secondary {
+
+      background: rgba(255, 255, 255, 0.2);
+
+      color: white;
+
+      border: 2px solid rgba(255, 255, 255, 0.3);
+
+      backdrop-filter: blur(10px);
+
+    }
+
+
+
+    .hero-btn-secondary:hover {
+
+      background: rgba(255, 255, 255, 0.3);
+
+      transform: translateY(-4px) scale(1.02);
+
+      box-shadow: var(--shadow-2xl);
+
+    }
+
+
+
+    /* Attendance Section (Hidden by default) */
+
+    .attendance-section {
+
+      display: none;
+
+      padding: var(--space-3xl) 0;
+
+      background: var(--gradient-bg);
+
+      min-height: 100vh;
+
+    }
+
+
+
+    .attendance-section.active {
+
+      display: block;
+
+    }
+
+
+
+    .back-to-home {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: var(--space-sm);
+
+      color: var(--text-medium);
+
+      text-decoration: none;
+
+      font-weight: 600;
+
+      margin-bottom: var(--space-lg);
+
+      transition: color var(--transition-base);
+
+    }
+
+
+
+    .back-to-home:hover {
+
+      color: var(--primary-from);
+
+    }
+
+
+
+    .attendance-card {
+
+      max-width: 900px;
+
+      margin: 0 auto;
+
+    }
+
+
+
+    .camera-container {
+
+      position: relative;
+
+      width: 100%;
+
+      max-width: 640px;
+
+      margin: var(--space-xl) auto;
+
+      border-radius: var(--radius-xl);
+
+      overflow: hidden;
+
+      background: #000;
+
+      box-shadow: var(--shadow-2xl);
+
+    }
+
+
+
+    .camera-container video,
+
+    .camera-container canvas {
+
+      width: 100%;
+
+      height: auto;
+
+      display: block;
+
+    }
+
+
+
+    .camera-container canvas {
+
+      display: none;
+
+    }
+
+
+
+    .camera-placeholder {
+
+      aspect-ratio: 4 / 3;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      background: linear-gradient(135deg, #1e293b, #334155);
+
+      color: white;
+
+      font-size: var(--font-size-lg);
+
+    }
+
+
+
+    .camera-controls {
+
+      display: flex;
+
+      gap: var(--space-md);
+
+      justify-content: center;
+
+      margin-top: var(--space-xl);
+
+      flex-wrap: wrap;
+
+    }
+
+
+
+    .result-box {
+
+      margin-top: var(--space-xl);
+
+      padding: var(--space-lg);
+
+      border-radius: var(--radius-lg);
+
+      text-align: center;
+
+      display: none;
+
+    }
+
+
+
+    .result-box.success {
+
+      background: rgba(16, 185, 129, 0.1);
+
+      border: 2px solid #10b981;
+
+      color: #059669;
+
+      display: block;
+
+    }
+
+
+
+    .result-box.error {
+
+      background: rgba(239, 68, 68, 0.1);
+
+      border: 2px solid #ef4444;
+
+      color: #dc2626;
+
+      display: block;
+
+    }
+
+
+
+    .result-box.info {
+
+      background: rgba(59, 130, 246, 0.1);
+
+      border: 2px solid #3b82f6;
+
+      color: #2563eb;
+
+      display: block;
+
+    }
+
+
+
+    /* Responsive */
+
+    @media (max-width: 767px) {
+
+      .hero-title {
+
+        font-size: var(--font-size-3xl);
+
+      }
+
+
+
+      .hero-subtitle {
+
+        font-size: var(--font-size-lg);
+
+      }
+
+
+
+      .hero-actions {
+
+        flex-direction: column;
+
+        width: 100%;
+
+        max-width: 400px;
+
+        margin: 0 auto;
+
+      }
+
+
+
+      .hero-btn {
+
+        width: 100%;
+
+        min-width: auto;
+
+      }
+
+
+
+      .camera-controls {
+
+        flex-direction: column;
+
+      }
+
+
+
+      .camera-controls .btn {
+
+        width: 100%;
+
+      }
+
+    }
+  </style>
+
+</head>
+
+
+
+<body>
+
+  <!-- Hero Section -->
+
+  <section class="hero" id="hero-section">
+
+    <div class="hero-content">
+
+      <h1 class="hero-title">AI Enabled Face Recognition Attendance Management System</h1>
+
+      <p class="hero-subtitle">Smart • Fast • Secure</p>
+
+      <p class="hero-description">Mark your attendance with facial recognition or access your employee portal</p>
+
+
+
+      <div class="hero-actions">
+
+        <button class="hero-btn hero-btn-primary" id="capture-attendance-btn">
+
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+
+            <circle cx="12" cy="13" r="4"></circle>
+
+          </svg>
+
+          Capture Attendance
+
+        </button>
+
+
+
+        <a href="login.html" class="hero-btn hero-btn-secondary">
+
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+
+            <polyline points="10 17 15 12 10 7"></polyline>
+
+            <line x1="15" y1="12" x2="3" y2="12"></line>
+
+          </svg>
+
+          Login to Portal
+
+        </a>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- Mark Attendance Section (Hidden by default) -->
+
+  <section class="attendance-section" id="attendance-section">
+
+    <div class="container">
+
+      <a href="#" class="back-to-home" id="back-to-home">
+
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+
+          <polyline points="12 19 5 12 12 5"></polyline>
+
+        </svg>
+
+        Back to Home
+
+      </a>
+
+
+
+      <div class="glass-card attendance-card animate-fade-in-up">
+
+        <div class="card-header text-center">
+
+          <h2 class="card-title">📸 Mark Your Attendance</h2>
+
+          <p class="card-subtitle">Position your face in the camera and capture</p>
+
+        </div>
+
+
+
+        <div class="camera-container">
+
+          <video id="camera" autoplay playsinline></video>
+
+          <canvas id="canvas"></canvas>
+
+          <div id="camera-placeholder" class="camera-placeholder">
+
+            <p>Click "Start Camera" to begin</p>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="camera-controls">
+
+          <button id="start-camera-btn" class="btn btn-gradient-primary btn-lg">
+
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+
+              <circle cx="12" cy="13" r="4"></circle>
+
+            </svg>
+
+            Start Camera
+
+          </button>
+
+          <button id="capture-btn" class="btn btn-gradient-accent btn-lg" disabled>
+
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+              <circle cx="12" cy="12" r="10"></circle>
+
+              <circle cx="12" cy="12" r="3"></circle>
+
+            </svg>
+
+            Capture & Mark Attendance
+
+          </button>
+
+          <button id="stop-camera-btn" class="btn btn-outline btn-lg" disabled>
+
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+
+            </svg>
+
+            Stop Camera
+
+          </button>
+
+        </div>
+
+
+
+        <div id="result" class="result-box"></div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- Scripts -->
+
+  <script>
+
+    // Section Toggle
+
+    const heroSection = document.getElementById('hero-section');
+
+    const attendanceSection = document.getElementById('attendance-section');
+
+    const captureAttendanceBtn = document.getElementById('capture-attendance-btn');
+
+    const backToHomeBtn = document.getElementById('back-to-home');
+
+
+
+    captureAttendanceBtn.addEventListener('click', () => {
+
+      heroSection.style.display = 'none';
+
+      attendanceSection.classList.add('active');
+
+    });
+
+
+
+    backToHomeBtn.addEventListener('click', (e) => {
+
+      e.preventDefault();
+
+      attendanceSection.classList.remove('active');
+
+      heroSection.style.display = 'flex';
+
+      // Stop camera if running
+
+      if (stream) {
+
+        stream.getTracks().forEach(track => track.stop());
+
+        stream = null;
+
+        video.style.display = 'none';
+
+        placeholder.style.display = 'flex';
+
+        startBtn.disabled = false;
+
+        captureBtn.disabled = true;
+
+        stopBtn.disabled = true;
+
+      }
+
+    });
+
+
+
+    // Camera Script
+
+    const video = document.getElementById('camera');
+
+    const canvas = document.getElementById('canvas');
+
+    const placeholder = document.getElementById('camera-placeholder');
+
+    const startBtn = document.getElementById('start-camera-btn');
+
+    const captureBtn = document.getElementById('capture-btn');
+
+    const stopBtn = document.getElementById('stop-camera-btn');
+
+    const resultBox = document.getElementById('result');
+
+
+
+    let stream = null;
+
+
+
+    // Start Camera - Ultimate Solution
+
+    startBtn.addEventListener('click', async () => {
+
+      console.log('Start camera button clicked');
+
+      // ── CHECK ATTENDANCE MARKING TIME WINDOW ────────────────────────────────────
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTime = currentHour * 60 + currentMinute; // Convert to minutes for easy comparison
+
+      const MARKING_START = 10 * 60; // 10:00 AM in minutes
+      const MARKING_END = 19 * 60 + 15; // 7:15 PM in minutes
+
+      if (currentTime < MARKING_START || currentTime >= MARKING_END) {
+        const startTimeStr = '10:00 AM';
+        const endTimeStr = '7:15 PM';
+        const currentTimeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        showResult(
+          `❌ ATTENDANCE MARKING CLOSED<br><br>
+          <h3>⏰ Attendance Window</h3>
+          <p><strong>Attendance can only be marked between ${startTimeStr} and ${endTimeStr}</strong></p>
+          <p>Current time: <strong>${currentTimeStr}</strong></p>
+          <p style="margin-top: 20px; color: #666;">Please try again during office hours.</p>`,
+          'error'
+        );
+        return;
+      }
+
+      // Check if on localhost or HTTPS
+
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+      const isHTTPS = window.location.protocol === 'https:';
+
+
+
+      if (!isLocalhost && !isHTTPS) {
+
+        showResult(
+
+          `🚨 Camera Security Issue<br>
+
+          <h3>🔒 Browser Security Policy</h3>
+
+          <p><strong>Camera access is blocked for security reasons.</strong></p>
+
+          
+
+          <h4>🔧 SOLUTIONS:</h4>
+
+          <div style="text-align: left; display: inline-block;">
+
+            <p><strong>1. 🌐 BEST: Use Localhost</strong></p>
+
+            <p>• Open: <a href="http://localhost:5000/" style="color: #007bff;">http://localhost:5000/</a></p>
+
+            <p>• Camera will work perfectly</p>
+
+            
+
+            <p><strong>2. 🔒 HTTPS (if available)</strong></p>
+
+            <p>• Use HTTPS connection</p>
+
+            <p>• Camera permissions allowed</p>
+
+            
+
+            <p><strong>3. 📷 Current URL (Limited)</strong></p>
+
+            <p>• May not work due to security</p>
+
+            <p>• Browser blocks camera access</p>
+
+          </div>
+
+          
+
+          <div style="margin-top: 20px;">
+
+            <button onclick="window.location.href='http://localhost:5000/'" style="background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 5px;">🌐 Go to Localhost (Recommended)</button>
+
+            <button onclick="showCameraInfo()" style="background: #6c757d; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 5px;">📷 Why This Happens</button>
+
+            <button onclick="tryDemoMode()" style="background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 5px;">🎭 Try Demo Mode</button>
+
+          </div>
+
+          
+
+          <p style="margin-top: 15px; font-size: 12px; color: #666;">
+
+            <strong>Current URL:</strong> ${window.location.href}<br>
+
+            <strong>Browser:</strong> ${navigator.userAgent}
+
+          </p>`,
+
+          'error'
+
+        );
+
+        return;
+
+      }
+
+
+
+      // If on localhost or HTTPS, try camera
+
+      requestCamera();
+
+    });
+
+
+
+    // Show camera info
+
+    function showCameraInfo() {
+
+      showResult(
+
+        `📷 Camera Security Information<br>
+
+        <h4>🔒 Why Camera Doesn't Work on IP Addresses:</h4>
+
+        <div style="text-align: left; display: inline-block;">
+
+          <p><strong>• Security Policy:</strong> Browsers block camera access on HTTP IP addresses</p>
+
+          <p><strong>• HTTPS Required:</strong> Only secure connections allow camera</p>
+
+          <p><strong>• Localhost Exception:</strong> localhost is trusted for development</p>
+
+          <p><strong>• User Privacy:</strong> Prevents unauthorized camera access</p>
+
+        </div>
+
+        
+
+        <h4>🔧 How to Fix:</h4>
+
+        <div style="text-align: left; display: inline-block;">
+
+          <p><strong>1. Use Localhost:</strong> <a href="http://localhost:5000/" style="color: #007bff;">http://localhost:5000/</a></p>
+
+          <p><strong>2. Start Server:</strong> Make sure server is running on port 5000</p>
+
+          <p><strong>3. Use Chrome/Firefox:</strong> Modern browsers with camera support</p>
+
+        </div>
+
+        
+
+        <button onclick="window.location.href='http://localhost:5000/'" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">🌐 Go to Localhost</button>`,
+
+        'info'
+
+      );
+
+    }
+
+
+
+    // Demo mode (no camera required)
+
+    function tryDemoMode() {
+
+      showResult(
+
+        `🎭 Demo Mode - No Camera Required<br>
+
+        <h4>📸 Simulated Face Recognition:</h4>
+
+        <div style="text-align: left; display: inline-block;">
+
+          <p><strong>• Random Employee Selection:</strong> Simulates face recognition</p>
+
+          <p><strong>• IN/OUT Times:</strong> Records attendance timestamps</p>
+
+          <p><strong>• No Camera Needed:</strong> Works from any URL</p>
+
+          <p><strong>• Instant Response:</strong> No delays or permissions</p>
+
+        </div>
+
+        
+
+        <h4>🎯 How It Works:</h4>
+
+        <div style="text-align: left; display: inline-block;">
+
+          <p><strong>1. Click "Start Demo"</strong></p>
+
+          <p><strong>2. Random Employee Selected</strong></p>
+
+          <p><strong>3. Click IN/OUT</strong></p>
+
+          <p><strong>4. Attendance Recorded</strong></p>
+
+        </div>
+
+        
+
+        <button onclick="startDemoMode()" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">🎭 Start Demo Mode</button>`,
+
+        'info'
+
+      );
+
+    }
+
+
+
+    // Start demo mode
+
+    function startDemoMode() {
+
+      // Simulate camera is active
+
+      placeholder.style.display = 'none';
+
+      video.style.display = 'block';
+
+
+
+      // Create demo video placeholder
+
+      video.style.background = 'linear-gradient(135deg, #1e293b, #334155)';
+
+      video.style.color = 'white';
+
+      video.style.display = 'flex';
+
+      video.style.alignItems = 'center';
+
+      video.style.justifyContent = 'center';
+
+      video.style.fontSize = '24px';
+
+      video.innerHTML = '🎭 Demo Mode - No Camera Required';
+
+
+
+      startBtn.textContent = '🎭 Demo Active';
+
+      captureBtn.disabled = false;
+
+      stopBtn.disabled = false;
+
+
+
+      showResult('🎭 Demo mode active! Click IN/OUT to simulate attendance.', 'success');
+
+
+
+      // Override capture function for demo
+
+      captureBtn.onclick = async () => {
+
+        try {
+
+          // Fetch real employees from database
+
+          const response = await fetch('/api/employees');
+
+          if (!response.ok) {
+
+            throw new Error('Failed to fetch employees');
+
+          }
+
+
+
+          const data = await response.json();
+
+          const employees = data.success ? data.employees : [];
+
+
+
+          if (employees.length === 0) {
+
+            showResult(
+
+              '❌ No employees found in database. Please register employees first.',
+
+              'error'
+
+            );
+
+            return;
+
+          }
+
+
+
+          const randomEmp = employees[Math.floor(Math.random() * employees.length)];
+
+          const time = new Date().toLocaleTimeString();
+
+
+
+          const isCheckIn = captureBtn.innerHTML.includes('IN') || Math.random() > 0.5; // Simulate if needed
+
+          const actionText = isCheckIn ? 'Successfully checked in!' : 'Successfully checked out!';
+
+          showResult(
+
+            `✅ ${actionText}<br>
+
+            <strong>Employee:</strong> ${randomEmp.full_name}<br>
+
+            <strong>ID:</strong> ${randomEmp.emp_id}<br>
+
+            <strong>Time:</strong> ${time}<br>
+
+            <strong>Confidence:</strong> ${Math.floor(Math.random() * 15) + 85}%<br>
+
+            <small>🎭 Demo mode - Using real employee data</small>`,
+
+            'success'
+
+          );
+
+        } catch (error) {
+
+          console.error('Demo mode error:', error);
+
+          showResult(
+
+            '❌ Failed to load employee data. Please check server connection.',
+
+            'error'
+
+          );
+
+        }
+
+      };
+
+    }
+
+
+
+    // Try camera anyway function
+
+    function tryCameraAnyway() {
+
+      showResult('📷 Attempting camera from current URL...', 'info');
+
+      requestCamera();
+
+    }
+
+
+
+    // Camera request function
+
+    async function requestCamera() {
+
+      try {
+
+        showResult('📷 Requesting camera...', 'info');
+
+        startBtn.textContent = '📷 Requesting Camera...';
+
+
+
+        stream = await navigator.mediaDevices.getUserMedia({
+
+          video: {
+
+            width: { ideal: 640, max: 1280 },
+
+            height: { ideal: 480, max: 720 },
+
+            facingMode: 'user'
+
+          },
+
+          audio: false
+
+        });
+
+
+
+        console.log('Camera obtained:', stream);
+
+
+
+        // Show video feed
+
+        video.srcObject = stream;
+
+        placeholder.style.display = 'none';
+
+        video.style.display = 'block';
+
+
+
+        // Update button states
+
+        startBtn.textContent = '📷 Camera Active';
+
+        captureBtn.disabled = false;
+
+        stopBtn.disabled = false;
+
+
+
+        // Wait for video to be ready
+
+        video.onloadedmetadata = async () => {
+
+          try {
+
+            await video.play();
+
+            console.log('Video playing successfully');
+
+            showResult('✅ Camera ready! Position your face and click capture.', 'success');
+
+          } catch (playError) {
+
+            console.error('Video play error:', playError);
+
+            showResult('❌ Video error: ' + playError.message, 'error');
+
+          }
+
+        };
+
+
+
+      } catch (error) {
+
+        console.error('Camera error:', error);
+
+        showResult('❌ Camera error: ' + error.message, 'error');
+
+        startBtn.textContent = '📷 Start Camera';
+
+      }
+
+    }
+
+
+
+    // Handle Camera Errors
+
+    function handleCameraError(error) {
+
+      let message = '';
+
+      let instructions = '';
+
+
+
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+
+        message = 'Camera permission was denied';
+
+        instructions = `
+
+          <h4>🔧 To fix this:</h4>
+
+          <ol>
+
+            <li>Click the 📷 camera icon in your browser address bar</li>
+
+            <li>Change "Block" to "Allow"</li>
+
+            <li>Refresh this page and try again</li>
+
+          </ol>
+
+          <p><strong>Or use localhost:</strong> http://localhost:5000/</p>
+
+          <button onclick="retryCamera()" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">🔄 Retry Camera</button>
+
+        `;
+
+      } else if (error.name === 'NotFoundError') {
+
+        message = 'No camera found';
+
+        instructions = '<p>Please connect a camera and try again.</p>';
+
+      } else if (error.name === 'NotReadableError') {
+
+        message = 'Camera is already in use';
+
+        instructions = '<p>Please close other applications using the camera and try again.</p>';
+
+      } else {
+
+        message = 'Camera access failed';
+
+        instructions = `<p>Error: ${error.message}</p>`;
+
+      }
+
+
+
+      showResult(`❌ ${message}<br>${instructions}`, 'error');
+
+      console.error('Camera error:', error);
+
+
+
+      // Reset button
+
+      startBtn.disabled = false;
+
+      startBtn.textContent = '📷 Start Camera';
+
+    }
+
+
+
+    // Retry Camera Function
+
+    function retryCamera() {
+
+      showResult('🔄 Retrying camera permission...', 'info');
+
+      setTimeout(() => {
+
+        startBtn.click();
+
+      }, 1000);
+
+    }
+
+
+
+    // Capture & Mark Attendance
+
+    captureBtn.addEventListener('click', async () => {
+
+      if (!stream && !video.srcObject) {
+
+        showResult('Please start the camera first.', 'error');
+
+        return;
+
+      }
+
+
+
+      // Show loading
+
+      captureBtn.disabled = true;
+
+      captureBtn.innerHTML = `
+
+        <svg class="animate-pulse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+          <circle cx="12" cy="12" r="10"></circle>
+
+        </svg>
+
+        Processing...
+
+      `;
+
+
+
+      try {
+
+        // Capture image from video
+        let width = video.videoWidth || 640;
+        let height = video.videoHeight || 480;
+        
+        // Limit canvas size to reduce base64 string size
+        const MAX_WIDTH = 480;
+        const MAX_HEIGHT = 360;
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+        if (height > MAX_HEIGHT) {
+          width = Math.round((width * MAX_HEIGHT) / height);
+          height = MAX_HEIGHT;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Validate canvas dimensions
+        if (canvas.width === 0 || canvas.height === 0) {
+          showResult('❌ Camera not ready. Please wait and try again.', 'error');
+          captureBtn.disabled = false;
+          captureBtn.innerHTML = '📸 Capture Attendance';
+          return;
+        }
+
+        const ctx = canvas.getContext('2d');
+
+
+
+        if (stream) {
+
+          // Real camera
+
+          ctx.drawImage(video, 0, 0);
+
+        } else {
+
+          // Demo mode - use placeholder
+
+          ctx.fillStyle = '#1e293b';
+
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.fillStyle = 'white';
+
+          ctx.font = '24px Arial';
+
+          ctx.textAlign = 'center';
+
+          ctx.fillText('🎭 Demo Mode', canvas.width / 2, canvas.height / 2);
+
+        }
+
+
+
+        // Convert to base64 with lower quality to reduce size
+        const imageData = canvas.toDataURL('image/jpeg', 0.6);
+
+        // Validate image data
+        if (!imageData || imageData.length < 100) {
+          showResult('❌ Failed to capture image. Please try again.', 'error');
+          captureBtn.disabled = false;
+          captureBtn.innerHTML = '📸 Capture Attendance';
+          return;
+        }
+
+
+
+        showResult('🔍 Processing attendance...', 'info');
+
+
+
+        const response = await fetch('/api/attendance/recognize', {
+
+          method: 'POST',
+
+          headers: { 'Content-Type': 'application/json' },
+
+          body: JSON.stringify({
+
+            image: imageData
+
+          })
+
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          showResult(`❌ Server error: ${errorData.error || response.statusText}`, 'error');
+          captureBtn.disabled = false;
+          captureBtn.innerHTML = '📸 Capture Attendance';
+          return;
+        }
+
+
+
+        const data = await response.json();
+
+
+
+        if (data.success) {
+
+          const isCheckIn = data.scan_type === 'ENTRY';
+
+          const actionText = isCheckIn ? '✅ Check-In Successful!' : '✅ Check-Out Successful!';
+
+          const actionIcon = isCheckIn ? '🟢' : '🔴';
+
+          const confidenceVal = typeof data.confidence === 'number'
+            ? (data.confidence > 1 ? data.confidence.toFixed(1) + '%' : (data.confidence * 100).toFixed(1) + '%')
+            : (data.confidence || '—');
+
+
+
+          const attendanceInfo = `
+
+    <strong>👤 Employee:</strong> ${data.employee_name || '—'}<br>
+
+    <strong>🆔 ID:</strong> ${data.emp_id || '—'}<br>
+
+    <strong>🕐 Time:</strong> ${data.scan_time || '—'}<br>
+
+    <strong>📌 Type:</strong> ${actionIcon} ${data.scan_type || '—'}<br>
+
+    <strong>🎯 Confidence:</strong> ${confidenceVal}
+
+  `;
+
+
+
+          showResult(`${actionText}<br><br>${attendanceInfo}`, 'success');
+
+        } else {
+
+          showResult(`❌ ${data.message || data.error}`, 'error');
+
+        }
+
+      } catch (error) {
+
+        console.error('Attendance error:', error);
+
+        showResult(
+
+          `❌ Failed to process attendance<br>
+
+          <strong>Error:</strong> ${error.message}<br>
+
+          <strong>Solutions:</strong><br>
+
+          • Check server is running on localhost:5000<br>
+
+          • Verify API endpoints are working<br>
+
+          • Check browser console for details<br>
+
+          • Try again`,
+
+          'error'
+
+        );
+
+      } finally {
+
+        captureBtn.disabled = false;
+
+        captureBtn.innerHTML = `
+
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+            <circle cx="12" cy="12" r="10"></circle>
+
+            <circle cx="12" cy="12" r="3"></circle>
+
+          </svg>
+
+          Capture & Mark Attendance
+
+        `;
+
+      }
+
+    });
+
+
+
+    // Stop Camera
+
+    stopBtn.addEventListener('click', () => {
+
+      if (stream) {
+
+        stream.getTracks().forEach(track => track.stop());
+
+        stream = null;
+
+        video.srcObject = null;
+
+        video.style.display = 'none';
+
+        placeholder.style.display = 'flex';
+
+
+
+        startBtn.textContent = '📷 Start Camera';
+
+        startBtn.disabled = false;
+
+        captureBtn.disabled = true;
+
+        stopBtn.disabled = true;
+
+
+
+        showResult('Camera stopped.', 'info');
+
+      }
+
+    });
+
+  
+
+    function showResult(message, type) {
+      resultBox.innerHTML = message;
+      resultBox.className = `result-box ${type}`;
+      resultBox.style.display = 'block';
+      
+      if (type === 'info') {
+        setTimeout(() => {
+          resultBox.style.display = 'none';
+        }, 5000);
+      } else if (type === 'success') {
+        setTimeout(() => {
+          resultBox.style.display = 'none';
+        }, 10000);
+      }
+    } 
+
+  
+
+  </script>
+
+</body>
+
+
+
+</html>

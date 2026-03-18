@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Attendance</title>
+    <style>
+        body { font-family: Arial; background: #f0f0f0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        video { width: 100%; border-radius: 10px; margin: 20px 0; }
+        button { padding: 15px 30px; margin: 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        .start-btn { background: #007bff; color: white; }
+        .in-btn { background: #28a745; color: white; }
+        .out-btn { background: #dc3545; color: white; }
+        .stop-btn { background: #6c757d; color: white; }
+        .result { padding: 20px; margin: 20px 0; border-radius: 5px; text-align: center; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Face Attendance System</h1>
+        <p>Simple face capture with IN/OUT times</p>
+        
+        <video id="camera" autoplay muted></video>
+        
+        <div>
+            <button id="startCamera" class="start-btn">📷 Start Camera</button>
+            <button id="markIn" class="in-btn" disabled>👤 Mark IN</button>
+            <button id="markOut" class="out-btn" disabled>👤 Mark OUT</button>
+            <button id="stopCamera" class="stop-btn" disabled>🛑 Stop Camera</button>
+        </div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const video = document.getElementById('camera');
+        const startBtn = document.getElementById('startCamera');
+        const markInBtn = document.getElementById('markIn');
+        const markOutBtn = document.getElementById('markOut');
+        const stopBtn = document.getElementById('stopCamera');
+        const result = document.getElementById('result');
+        
+        let stream = null;
+
+        function showResult(message, type) {
+            result.innerHTML = message;
+            result.className = `result ${type}`;
+            result.style.display = 'block';
+        }
+
+        // Start Camera
+        startBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                
+                startBtn.disabled = true;
+                markInBtn.disabled = false;
+                markOutBtn.disabled = false;
+                stopBtn.disabled = false;
+                
+                showResult('📷 Camera ready! Position your face and click IN or OUT', 'info');
+            } catch (error) {
+                showResult('❌ Camera error: ' + error.message, 'error');
+            }
+        });
+
+        // Stop Camera
+        stopBtn.addEventListener('click', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+                
+                startBtn.disabled = false;
+                markInBtn.disabled = true;
+                markOutBtn.disabled = true;
+                stopBtn.disabled = true;
+                
+                showResult('🛑 Camera stopped', 'info');
+            }
+        });
+
+        // Mark Attendance
+        async function markAttendance(type) {
+            if (!stream) {
+                showResult('❌ Please start camera first', 'error');
+                return;
+            }
+
+            try {
+                // Capture image
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                
+                const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                const time = new Date().toLocaleTimeString();
+                
+                // Show result (simplified - just time capture)
+                showResult(
+                    `✅ ${type.toUpperCase()} marked successfully!<br>
+                    Time: ${time}<br>
+                    Image captured: ${imageData.length} bytes`,
+                    'success'
+                );
+                
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        markInBtn.addEventListener('click', () => markAttendance('IN'));
+        markOutBtn.addEventListener('click', () => markAttendance('OUT'));
+    </script>
+</body>
+</html>

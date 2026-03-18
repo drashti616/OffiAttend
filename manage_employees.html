@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Employees • OffiAttend</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Custom styles for employee list elements that aren't in global CSS yet */
+    .employee-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border-light);
+    }
+
+    .employee-avatar-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .employee-id-badge {
+      font-family: 'Inter', monospace;
+      font-weight: 700;
+      color: var(--text-dark);
+      background: var(--bg-light);
+      padding: 4px 10px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-light);
+      font-size: var(--font-size-xs);
+    }
+  </style>
+</head>
+
+<body data-requires-auth="true">
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle menu">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <div class="mobile-overlay"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar (Loaded dynamically from sidebar.html) -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page">
+        <div class="container">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Manage Employees</h1>
+              <p class="page-subtitle">View and manage all registered employees</p>
+            </div>
+          </div>
+
+          <div class="card fade-in">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">All Employees</h2>
+                <div id="employeeCount" class="card-subtitle">0 employees registered in the system</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="margin-bottom: var(--space-lg);">
+                <input type="text" id="searchBox" class="field" placeholder="Search by employee ID or name..."
+                  onkeyup="filterTable()" style="width: 100%; margin-bottom: 0;">
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Photo</th>
+                      <th>Employee ID</th>
+                      <th>Name</th>
+                      <th>Designation</th>
+                      <th style="text-align: center;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="employeeTableBody">
+                    <tr>
+                      <td colspan="5" class="muted" style="text-align: center; padding: var(--space-xl);">Loading…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Delete Employee</h3>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p id="deleteMessage">Are you sure you want to delete this employee? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer" style="padding: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button type="button" class="btn btn-gradient-danger" id="confirmDeleteBtn"
+          onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="js/app.js"></script>
+  <script src="js/responsive.js"></script>
+  <script src="js/pages.js"></script>
+  <script>
+    let allEmployees = [];
+    let deleteTargetId = null;
+
+    // Load employees on page load
+    document.addEventListener('DOMContentLoaded', function () {
+      // Load sidebar first
+      if (window.OfficeApp && window.OfficeApp.loadSidebar) {
+        window.OfficeApp.loadSidebar();
+      }
+
+      loadEmployees();
+    });
+
+    // Load employees from API
+    async function loadEmployees() {
+      try {
+        const url = 'http://localhost:5000/api/employees';
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+          allEmployees = data.employees;
+          renderEmployeeTable(allEmployees);
+          updateEmployeeCount(allEmployees.length);
+        } else {
+          showError(data.error || 'Failed to load employees');
+        }
+      } catch (error) {
+        console.error('Error loading employees:', error);
+        showError('Failed to connect to server');
+      }
+    }
+
+    function renderEmployeeTable(employees) {
+      const tbody = document.getElementById('employeeTableBody');
+
+      if (!employees || employees.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="muted" style="text-align: center; padding: var(--space-3xl);">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; opacity: 0.5;">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <p>No employees found matching your search</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = employees.map(emp => {
+        let initials = 'UN';
+        if (emp.full_name && emp.full_name.trim()) {
+          const words = emp.full_name.trim().split(/\s+/).filter(w => w.length > 0);
+          if (words.length >= 2) {
+            initials = words.slice(0, 2).map(w => w[0].toUpperCase()).join('');
+          } else if (words.length === 1) {
+            initials = words[0].slice(0, 2).toUpperCase();
+          }
+        }
+
+        const photoHtml = emp.profile_pic_path
+          ? `<img src="http://localhost:5000/${emp.profile_pic_path}" class="employee-avatar" alt="${emp.full_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+             <div class="employee-avatar-placeholder" style="display:none;">${initials}</div>`
+          : `<div class="employee-avatar-placeholder">${initials}</div>`;
+
+        return `
+          <tr>
+            <td style="width: 80px; text-align: center; padding-left: 20px;">${photoHtml}</td>
+            <td><span class="employee-id-badge">${emp.emp_id}</span></td>
+            <td><strong>${emp.full_name || '—'}</strong></td>
+            <td>${emp.designation || '—'}</td>
+            <td>
+              <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <a href="employee_details.html?id=${emp.emp_id}" class="btn btn-gradient-primary btn-sm">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  View 
+                </a>
+                <button class="btn btn-gradient-danger btn-sm" onclick="askDelete('${emp.emp_id}', '${emp.full_name || 'Employee'}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Filter table
+    function filterTable() {
+      const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+      const filtered = allEmployees.filter(emp =>
+        (emp.emp_id || '').toLowerCase().includes(searchTerm) ||
+        (emp.full_name || '').toLowerCase().includes(searchTerm)
+      );
+      renderEmployeeTable(filtered);
+      updateEmployeeCount(filtered.length);
+    }
+
+    // Clear filters
+    function clearFilters() {
+      document.getElementById('searchBox').value = '';
+      renderEmployeeTable(allEmployees);
+      updateEmployeeCount(allEmployees.length);
+    }
+
+    // Update employee count
+    function updateEmployeeCount(count) {
+      document.getElementById('employeeCount').textContent = `${count} employee${count !== 1 ? 's' : ''}`;
+    }
+
+
+    // Ask for delete confirmation
+    function askDelete(empId, empName) {
+      deleteTargetId = empId;
+      document.getElementById('deleteMessage').textContent =
+        `Are you sure you want to delete "${empName}" (${empId})? This action cannot be undone and will remove all attendance records and face data.`;
+      document.getElementById('deleteModal').classList.add('show');
+    }
+
+    // Close delete modal
+    function closeDeleteModal() {
+      deleteTargetId = null;
+      document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    // Confirm delete
+    async function confirmDelete() {
+      if (!deleteTargetId) return;
+
+      const btn = document.getElementById('confirmDeleteBtn');
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/employees/${deleteTargetId}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showSuccess('Employee deleted successfully');
+          loadEmployees(); // Reload the list
+          closeDeleteModal();
+        } else {
+          showError(data.error || 'Failed to delete employee');
+        }
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+        showError('Failed to connect to server');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+      }
+    }
+
+    // Show success message
+    function showSuccess(message) {
+      console.log('Success:', message);
+    }
+
+    // Show error message
+    function showError(message) {
+      console.error('Error:', message);
+    }
+  </script>
+</body>
+
+</html>

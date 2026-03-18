@@ -1,0 +1,28 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Environment variables
+.env
+
+# Backup folder (duplicates of faces/images/)
+faces/backup/
+
+# Binary model files (auto-generated on startup, large size)
+models/face_embeddings.pkl
+faces/face_templates.pkl
+backend/static/face_model.yml
+backend/static/label_map.pkl
