@@ -194,6 +194,61 @@ class EnhancedAttendanceEngine:
             print(f"[DAILY_SLOTS] Error: {e}")
             return {"success": False, "error": str(e)}
 
+    def run_startup_catchup(self) -> dict:
+        """
+        Runs on system startup to handle any missed operations:
+        1. Generates missing slots for today and yesterday
+        2. Finalizes any PENDING records from past dates
+        """
+        today = datetime.now().date()
+        results = {
+            "slots": None,
+            "finalized_dates": []
+        }
+        
+        print(f"[CATCHUP] Starting system catch-up at {datetime.now()}")
+        
+        # 1. Generate missing slots for today and yesterday
+        # This ensures if server was off yesterday, we get those slots
+        try:
+            results["slots"] = self.auto_generate_missing_records(today, include_yesterday=True)
+            print(f"[CATCHUP] Slot generation: {results['slots'].get('records_created', 0)} created")
+        except Exception as e:
+            print(f"[CATCHUP] Slot generation error: {e}")
+            results["slots_error"] = str(e)
+        
+        # 2. Finalize all past pending records
+        # This handles cases where server was off at 7:15 PM on previous days
+        try:
+            cursor = self.db.cursor(dictionary=True)
+            # Find all dates in the past that have PENDING records
+            cursor.execute("""
+                SELECT DISTINCT att_date FROM attendance 
+                WHERE status = %s AND att_date < %s AND attendance_locked = 0
+            """, (STATUS_PENDING, today))
+            
+            past_pending_dates = cursor.fetchall()
+            cursor.close()
+            
+            if not past_pending_dates:
+                print("[CATCHUP] No past PENDING records found to finalize")
+            
+            for row in past_pending_dates:
+                past_date = row['att_date']
+                print(f"[CATCHUP] Finalizing missed records for {past_date}")
+                finalize_result = self.finalize_daily_attendance(past_date)
+                results["finalized_dates"].append({
+                    "date": past_date.strftime('%Y-%m-%d'),
+                    "result": finalize_result
+                })
+                
+        except Exception as e:
+            print(f"[CATCHUP] Finalization error: {e}")
+            results["finalization_error"] = str(e)
+            
+        print("[CATCHUP] System catch-up complete")
+        return results
+
     def finalize_daily_attendance(self, target_date: date = None) -> dict:
         """
         AUTO LOCK PROCESS at 7:15 PM
