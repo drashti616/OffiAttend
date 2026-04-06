@@ -114,7 +114,7 @@ print(bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode())
 Copy the generated hash. Then, open your database client (e.g., phpMyAdmin) and run this SQL query:
 ```sql
 INSERT INTO admins (username, password_hash, full_name, email) 
-VALUES ('your_username', 'YOUR_COPIED_HASH', 'Admin Name', 'admin@example.com');
+VALUES ('your_username', 'YOUR_COPIED_HASH', 'Admin_Name', 'Admin_email');
 ```
 
 ### Step 6: Run Application
