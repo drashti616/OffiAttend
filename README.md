@@ -101,26 +101,40 @@ DB_CFG = {
 }
 ```
 
-### Step 5: Run Application
+### Step 5: Create Initial Admin Account
+Since the database schema is clean for security, you must manually create your first admin account.
+
+First, generate a secure `bcrypt` hashed password. Open your Python terminal and run:
+```python
+import bcrypt
+password = "YOUR_SECURE_PASSWORD"
+print(bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode())
+```
+
+Copy the generated hash. Then, open your database client (e.g., phpMyAdmin) and run this SQL query:
+```sql
+INSERT INTO admins (username, password_hash, full_name, email) 
+VALUES ('your_username', 'YOUR_COPIED_HASH', 'Admin Name', 'admin@example.com');
+```
+
+### Step 6: Run Application
 ```bash
 python backend/app.py
 ```
 
-### Step 6: Access Application
+### Step 7: Access Application
 Open your browser and go to:
 ```
 http://localhost:5000
 ```
-
-
 
 ## 📖 Getting Started Workflow
 
 ### 1. Login as Admin
 ```
 URL: http://localhost:5000
-Employee ID: drashti.616
-Password: Mishti.4424
+Username/ID: (The username you created)
+Password: (The password you chose)
 ```
 
 ### 2. Register New Employees
