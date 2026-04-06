@@ -197,7 +197,8 @@ class EnhancedAttendanceEngine:
     def run_startup_catchup(self) -> dict:
         """
         Runs on system startup to handle any missed operations:
-        1. Generates missing slots for today and yesterday
+        1. Generates missing attendance records for ALL missed past days
+           (not just yesterday — handles server being off for multiple days)
         2. Finalizes any PENDING records from past dates
         """
         today = datetime.now().date()
@@ -251,198 +252,161 @@ class EnhancedAttendanceEngine:
 
     def finalize_daily_attendance(self, target_date: date = None) -> dict:
         """
-        AUTO LOCK PROCESS at 7:15 PM
-        Rule Case Matrix:
-        - Approved + No Scan -> Leave
-        - Rejected + No Scan -> Absent
-        - Not Applied + No Scan -> Absent
-        - Any + Scan Done -> Present/Late (already set)
-        Sets attendance_locked = 1
+        AUTO LOCK PROCESS - Finalizes attendance records
+        1. Find ALL pending records from past dates (not just target_date)
+        2. Apply Decision Matrix:
+           - Approved Leave + No Scan -> Leave
+           - Not Applied/Rejected + No Scan -> Absent
+           - Already has Scan -> Lock existing Present/Late status
         """
-        if target_date is None:
-            target_date = datetime.now().date()
+        today = datetime.now().date()
+        
+        # If target_date is not provided, we look back at ALL past unlocked dates
+        # This fixes the issue where missed days stay "Pending" forever
         
         cursor = self.db.cursor(dictionary=True)
-        
         try:
-            # Select Employees where no scan (in_time IS NULL) and not locked
-            cursor.execute("""
-                SELECT emp_id, status, leave_status FROM attendance 
-                WHERE att_date = %s 
-                AND attendance_locked = 0
-                AND in_time IS NULL
-            """, (target_date,))
+            # Step A: Find all dates before today that have unlocked attendance records
+            query_dates = "SELECT DISTINCT att_date FROM attendance WHERE attendance_locked = 0 AND att_date < %s"
+            cursor.execute(query_dates, (today,))
+            unlocked_dates = [row['att_date'] for row in cursor.fetchall()]
             
-            unlocked_records = cursor.fetchall()
-            cursor.close()
-            
-            finalized_leave = 0
-            finalized_absent = 0
+            # If target_date is today and it's past 7:15 PM, add it too
+            if target_date == today and datetime.now().time() >= FINALIZE_TIME:
+                if today not in unlocked_dates:
+                    unlocked_dates.append(today)
+            elif target_date and target_date != today and target_date not in unlocked_dates:
+                 unlocked_dates.append(target_date)
+
+            print(f"[AUTO_LOCK] Found {len(unlocked_dates)} dates that need finalization: {unlocked_dates}")
+
+            total_finalized_leave = 0
+            total_finalized_absent = 0
+            total_locked_scans = 0
             errors = []
-            
-            print(f"[AUTO_LOCK] 🔍 Processing {len(unlocked_records)} unlocked/no-scan records for {target_date}")
-            
-            for record in unlocked_records:
-                emp_id = record['emp_id']
-                current_status = record['status']
-                current_leave_status = record['leave_status']
+
+            for process_date in unlocked_dates:
+                print(f"[AUTO_LOCK] Finalizing records for {process_date}...")
                 
-                print(f"[AUTO_LOCK] Processing {emp_id}: current_status={current_status}, leave_status={current_leave_status}")
+                # 1. Process records WITHOUT scans (in_time is NULL)
+                cursor.execute("""
+                    SELECT emp_id FROM attendance 
+                    WHERE att_date = %s AND attendance_locked = 0 AND in_time IS NULL
+                """, (process_date,))
                 
-                try:
-                    # Get the actual leave status from leave_applications table
-                    leave_status = self._get_detailed_leave_status(emp_id, target_date)
-                    print(f"[AUTO_LOCK]   {emp_id}: Fetched leave_status from DB = {leave_status}")
+                unscanned = cursor.fetchall()
+                for record in unscanned:
+                    emp_id = record['emp_id']
                     
-                    # FINAL RULES (Matrix)
+                    # Fetch detailed leave status
+                    leave_status = self._get_detailed_leave_status(emp_id, process_date)
+                    
                     if leave_status == 'Approved':
-                        # Approved leave + no scan -> Leave
                         final_status = STATUS_LEAVE
-                        finalized_leave += 1
-                        print(f"[AUTO_LOCK]   {emp_id}: ✅ Setting to LEAVE (approved leave, no scan)")
+                        total_finalized_leave += 1
                     else:
-                        # Not Applied/Rejected + no scan -> Absent
                         final_status = STATUS_ABSENT
-                        finalized_absent += 1
-                        print(f"[AUTO_LOCK]   {emp_id}: ✅ Setting to ABSENT ({leave_status}, no scan)")
+                        total_finalized_absent += 1
                     
-                    # Step 3: Lock Attendance
-                    cursor = self.db.cursor()
+                    # Apply changes and LOCK
                     cursor.execute("""
                         UPDATE attendance 
-                        SET status = %s, attendance_locked = 1, updated_at = NOW()
+                        SET status = %s, leave_status = %s, attendance_locked = 1, updated_at = NOW()
                         WHERE emp_id = %s AND att_date = %s
-                    """, (final_status, emp_id, target_date))
-                    self.db.commit()
-                    cursor.close()
-                    print(f"[AUTO_LOCK]   {emp_id}: ✅ Updated in database")
-                    
-                except Exception as e:
-                    error_msg = f"{emp_id}: {str(e)}"
-                    errors.append(error_msg)
-                    print(f"[AUTO_LOCK]   ❌ Error: {error_msg}")
-            
-            # Also lock records that ALREADY have scans (they were already set to Present/Late during scan)
-            cursor = self.db.cursor()
-            cursor.execute("""
-                UPDATE attendance 
-                SET attendance_locked = 1, updated_at = NOW()
-                WHERE att_date = %s AND attendance_locked = 0 AND in_time IS NOT NULL
-            """, (target_date,))
-            locked_with_scans = cursor.rowcount
-            self.db.commit()
-            cursor.close()
-            print(f"[AUTO_LOCK] 🔒 Locked {locked_with_scans} records with scans")
-            
-            total_finalized = finalized_leave + finalized_absent + locked_with_scans
-            print(f"[AUTO_LOCK] ✅ Finalization complete for {target_date}:")
-            print(f"[AUTO_LOCK]   - Marked LEAVE: {finalized_leave}")
-            print(f"[AUTO_LOCK]   - Marked ABSENT: {finalized_absent}")
-            print(f"[AUTO_LOCK]   - Locked with scans: {locked_with_scans}")
-            print(f"[AUTO_LOCK]   - Total finalized: {total_finalized}")
+                    """, (final_status, leave_status, emp_id, process_date))
+                
+                # 2. Lock records WITH scans (they are already Present/Late)
+                cursor.execute("""
+                    UPDATE attendance 
+                    SET attendance_locked = 1, updated_at = NOW()
+                    WHERE att_date = %s AND attendance_locked = 0 AND in_time IS NOT NULL
+                """, (process_date,))
+                total_locked_scans += cursor.rowcount
+                
+                self.db.commit()
+
+            print(f"[AUTO_LOCK] Done. Leave: {total_finalized_leave}, Absent: {total_finalized_absent}, Scanned: {total_locked_scans}")
             
             return {
                 "success": True,
-                "date": target_date.strftime('%Y-%m-%d'),
-                "marked_leave": finalized_leave,
-                "marked_absent": finalized_absent,
-                "locked_with_scans": locked_with_scans,
-                "total_finalized": total_finalized,
+                "dates_processed": [str(d) for d in unlocked_dates],
+                "marked_leave": total_finalized_leave,
+                "marked_absent": total_finalized_absent,
+                "locked_with_scans": total_locked_scans,
+                "total_finalized": total_finalized_leave + total_finalized_absent + total_locked_scans,
                 "errors": errors
             }
         except Exception as e:
             print(f"[AUTO_LOCK] ❌ Error: {e}")
-            import traceback
-            traceback.print_exc()
+            self.db.rollback()
             return {"success": False, "error": str(e)}
+        finally:
+            cursor.close()
     
     def auto_generate_missing_records(self, target_date: date = None, include_yesterday: bool = True) -> dict:
         """
-        Auto-generate attendance records for employees who never scanned
-        SAFE GENERATION: Checks if records already exist for the date before creating
-        Only generates records for dates on or after employee's joining date
-        Uses database-level checks to prevent regeneration on server restart
+        Generates attendance slots for all active employees.
+        Looks back up to 7 days to find any missed dates where slots weren't created.
         """
+        today = datetime.now().date()
+        now_time = datetime.now().time()
         if target_date is None:
-            target_date = datetime.now().date()
+            target_date = today
         
         cursor = self.db.cursor(dictionary=True)
-        
         try:
-            dates_to_process = [target_date]
-            if include_yesterday:
-                yesterday = target_date - timedelta(days=1)
-                dates_to_process.append(yesterday)
+            # Look back over the past 7 days to see if any date has 0 records
+            # This handles cases where the server was offline for multiple days
+            dates_to_process = []
+            for i in range(7, -1, -1): # From 7 days ago to today
+                dt = target_date - timedelta(days=i)
+                
+                # Logic: If checking Today, only process if it's past 9:45 AM
+                # Older days are always backfilled immediately
+                if dt == today and now_time < OFFICE_START:
+                    continue
+                    
+                cursor.execute("SELECT COUNT(*) as count FROM attendance WHERE att_date = %s", (dt,))
+                if cursor.fetchone()['count'] == 0:
+                    dates_to_process.append(dt)
             
+            if not dates_to_process:
+                print("[AUTOGEN] No missing dates found in the last 7 days.")
+                return {"success": True, "records_created": 0}
+
+            print(f"[AUTOGEN] Generating slots for missed dates: {dates_to_process}")
             total_generated = 0
-            errors = []
             
             for process_date in dates_to_process:
-                print(f"[AUTOGEN] Processing missing records for {process_date}")
-
-                # Get all active employees who have joined on or before this date
+                # Get all employees who joined on or before this date
                 cursor.execute("""
-                    SELECT e.emp_id, e.full_name, e.joining_date
-                    FROM employees e
-                    WHERE e.status = 'Active'
-                        AND (e.joining_date IS NULL OR e.joining_date <= %s)
+                    SELECT emp_id FROM employees 
+                    WHERE status = 'Active' AND (joining_date IS NULL OR joining_date <= %s)
                 """, (process_date,))
+                employees = cursor.fetchall()
 
-                all_employees = cursor.fetchall()
-                print(f"[AUTOGEN] Found {len(all_employees)} active employees for {process_date}")
+                for emp in employees:
+                    emp_id = emp['emp_id']
+                    # Initial leave status check
+                    cursor.execute("""
+                        SELECT status FROM leave_applications
+                        WHERE emp_id = %s AND %s BETWEEN from_date AND to_date
+                        ORDER BY created_at DESC LIMIT 1
+                    """, (emp_id, process_date))
+                    leave_row = cursor.fetchone()
+                    leave_status = leave_row['status'] if leave_row else 'Not Applied'
 
-                for employee in all_employees:
-                    emp_id = employee['emp_id']
-
-                    try:
-                        # FIX: Check PER EMPLOYEE instead of skipping the whole date.
-                        # This prevents an existing record for one employee from blocking
-                        # slot creation for all others (e.g. on server restart).
-                        cursor.execute("""
-                            SELECT COUNT(*) as count FROM attendance
-                            WHERE emp_id = %s AND att_date = %s
-                        """, (emp_id, process_date))
-                        already_exists = cursor.fetchone()['count'] > 0
-
-                        if already_exists:
-                            print(f"[AUTOGEN] Skipping {emp_id} on {process_date} - record already exists")
-                            continue
-
-                        # Check for leave application for this employee on this date
-                        cursor.execute("""
-                            SELECT status FROM leave_applications
-                            WHERE emp_id = %s AND %s BETWEEN from_date AND to_date
-                            ORDER BY created_at DESC LIMIT 1
-                        """, (emp_id, process_date))
-
-                        leave_app = cursor.fetchone()
-                        leave_status = leave_app['status'] if leave_app else 'Not Applied'
-                        
-                        # Status is PENDING for all new slots (will be finalized at 7:15 PM)
-                        status = STATUS_PENDING
-
-                        # Create attendance record with appropriate leave_status
-                        cursor.execute("""
-                            INSERT INTO attendance (emp_id, att_date, status, leave_status, source, created_at)
-                            VALUES (%s, %s, %s, %s, %s, NOW())
-                        """, (emp_id, process_date, status, leave_status, 'Auto-Generator'))
-
-                        total_generated += 1
-                        print(f"[AUTOGEN] Created {status} record for {emp_id} on {process_date} with leave_status={leave_status}")
-
-                    except Exception as e:
-                        errors.append(f"{emp_id}: {str(e)}")
-                        print(f"[AUTOGEN] Error generating record for {emp_id}: {e}")
-
-                # Commit after processing all employees for this date
-                self.db.commit()
+                    cursor.execute("""
+                        INSERT IGNORE INTO attendance (emp_id, att_date, status, leave_status, source, created_at)
+                        VALUES (%s, %s, 'Pending', %s, 'Auto-Generator', NOW())
+                    """, (emp_id, process_date, leave_status))
+                    total_generated += cursor.rowcount
             
+            self.db.commit()
             return {
                 "success": True,
-                "dates_processed": dates_to_process,
-                "records_created": total_generated,
-                "records_skipped": sum(len(all_employees) - total_generated for _ in dates_to_process),
-                "errors": errors
+                "dates_processed": [str(d) for d in dates_to_process],
+                "records_created": total_generated
             }
             
         except Exception as e:

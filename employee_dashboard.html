@@ -272,7 +272,6 @@
               <tr id="detail_row_${empId}_${record.att_date || record.date}" style="display: none;">
                 <td colspan="6" style="padding: 0;">
                   <div class="detail-content" style="padding: 20px; border-left: 4px solid var(--primary-from); background: var(--bg-light);">
-                    <h4>Attendance Details for ${formatDate(record.att_date || record.date)} - ${empId}</h4>
                     <div id="scan_logs_${empId}_${record.att_date || record.date}">Loading scan logs...</div>
                   </div>
                 </td>
@@ -367,6 +366,12 @@
             // Separate ENTRY and EXIT logs
             const entryLogs = data.logs.filter(log => log.action === 'ENTRY');
             const exitLogs = data.logs.filter(log => log.action === 'EXIT');
+
+            // Only show table if there are scans, otherwise show simple message
+            if (entryLogs.length === 0 && exitLogs.length === 0) {
+              logsContainer.innerHTML = '<p style="color: #999;">No scan logs found</p>';
+              return;
+            }
 
             // Create table with Entry and Exit columns
             const logsHtml = `

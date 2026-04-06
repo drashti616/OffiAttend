@@ -161,31 +161,47 @@
           .then(data => {
             console.log('Logs data:', data);
             if (data.success && data.logs) {
-              // Separate ENTRY and EXIT logs
-              const entryLogs = data.logs.filter(log => log.action === 'ENTRY');
-              const exitLogs = data.logs.filter(log => log.action === 'EXIT');
+              // Sort logs by timestamp to ensure proper pairing
+              const sortedLogs = data.logs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+              const entryLogs = sortedLogs.filter(log => log.action === 'ENTRY');
+              const exitLogs = sortedLogs.filter(log => log.action === 'EXIT');
 
-              // Create table with Entry and Exit columns
-              const logsHtml = `
-                <div style="display: flex; gap: 20px;">
-                  <div style="flex: 1;">
-                    <h5 style="color: #16a34a; margin-bottom: 10px;">Entry Times</h5>
-                    ${entryLogs.length > 0 ? entryLogs.map(log => `
-                      <div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px;">
-                        ${formatTime(log.created_at)}
-                      </div>
-                    `).join('') : '<p style="color: #999;">No entry scans</p>'}
-                  </div>
-                  <div style="flex: 1;">
-                    <h5 style="color: #dc2626; margin-bottom: 10px;">Exit Times</h5>
-                    ${exitLogs.length > 0 ? exitLogs.map(log => `
-                      <div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">
-                        ${formatTime(log.created_at)}
-                      </div>
-                    `).join('') : '<p style="color: #999;">No exit scans</p>'}
-                  </div>
-                </div>
-              `;
+              // Only show table if there are scans, otherwise show simple message
+              if (entryLogs.length === 0 && exitLogs.length === 0) {
+                logsContainer.innerHTML = '<p style="color: #999;">No scan logs found</p>';
+                return;
+              }
+
+              // Create paired display with entries and corresponding exits
+              let pairedHtml = '<div style="display: flex; gap: 20px;"><div style="flex: 1;"><h5 style="color: #16a34a; margin-bottom: 10px;">Entry Times</h5>';
+              let exitHtml = '<div style="flex: 1;"><h5 style="color: #dc2626; margin-bottom: 10px;">Exit Times</h5>';
+              
+              if (entryLogs.length === 0) {
+                pairedHtml += '<p style="color: #999;">No entry scans</p>';
+              } else {
+                entryLogs.forEach((entry, index) => {
+                  pairedHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px;">${formatTime(entry.created_at)}</div>`;
+                  
+                  // Add corresponding exit or "-" if none exists
+                  if (index < exitLogs.length) {
+                    exitHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">${formatTime(exitLogs[index].created_at)}</div>`;
+                  } else {
+                    exitHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; color: #999;">—</div>`;
+                  }
+                });
+              }
+              
+              if (exitLogs.length > entryLogs.length) {
+                // Handle case where there are more exits than entries (shouldn't happen with new logic but just in case)
+                for (let i = entryLogs.length; i < exitLogs.length; i++) {
+                  pairedHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; color: #999;">—</div>`;
+                  exitHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">${formatTime(exitLogs[i].created_at)}</div>`;
+                }
+              }
+              
+              pairedHtml += '</div>' + exitHtml + '</div>';
+
+              const logsHtml = pairedHtml;
 
               logsContainer.innerHTML = logsHtml;
             } else {
@@ -348,7 +364,6 @@
                 <tr id="detail_row_${r.emp_id}_${r.att_date}" style="display: none;">
                   <td colspan="7" style="padding: 0;">
                     <div class="detail-content" style="padding: 20px; border-left: 4px solid var(--primary-from); background: var(--bg-light);">
-                      <h4>Attendance Details for ${formatDate(r.att_date)} - ${r.emp_id}</h4>
                       <div id="scan_logs_${r.emp_id}_${r.att_date}">Loading scan logs...</div>
                     </div>
                   </td>

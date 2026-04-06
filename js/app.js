@@ -45,27 +45,9 @@ function requireAuth() {
     localStorage.clear();
     sessionStorage.clear();
     
-    // Prevent back button
-    window.history.pushState(null, null, window.location.href);
-    window.onpopstate = function() {
-      window.history.pushState(null, null, window.location.href);
-    };
-    
-    window.location.href = "login.html";
+    window.location.replace("login.html");
     return null;
   }
-  
-  // Setup back button prevention for authenticated users
-  window.history.pushState(null, null, window.location.href);
-  window.onpopstate = function() {
-    // If user tries to go back, check if still authenticated
-    const currentUser_check = currentUser();
-    if (!currentUser_check || !currentUser_check.emp_id) {
-      window.location.href = "login.html";
-    } else {
-      window.history.pushState(null, null, window.location.href);
-    }
-  };
   
   return user;
 }
@@ -83,19 +65,8 @@ function logout() {
   // Clear all localStorage to prevent any cached data
   localStorage.clear();
   
-  // Prevent back button by replacing history
-  window.history.pushState(null, null, window.location.href);
-  window.onpopstate = function() {
-    window.history.pushState(null, null, window.location.href);
-  };
-  
-  // Redirect to login
-  window.location.href = "login.html";
-  
-  // Prevent any further navigation
-  setTimeout(() => {
-    window.location.href = "login.html";
-  }, 100);
+  // Redirect to login using replace to avoid history loops
+  window.location.replace("login.html");
 }
 
 function qs(sel, root = document) { return root.querySelector(sel); }
@@ -328,33 +299,50 @@ window.OfficeApp = {
 
 
 // ── GLOBAL SECURITY: Enforce authentication on all pages ──────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  // Check if page requires authentication
-  const body = document.body;
-  const requiresAuth = body.getAttribute('data-requires-auth') === 'true';
-  
+function enforceAuthImmediately() {
+  const user = currentUser();
+  const path = window.location.pathname;
+  const isPublicPage = path.endsWith('login.html') || path.endsWith('index.html') || path.endsWith('/') || path.endsWith('face_attendance.html');
+  const requiresAuth = !isPublicPage;
+
   if (requiresAuth) {
-    const user = currentUser();
     if (!user || !user.emp_id) {
-      // Not authenticated - redirect to login
+      // Not authenticated - redirect to login immediately
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = 'login.html';
+      window.location.replace('login.html');
       return;
     }
-    
-    // Setup back button prevention
-    window.history.pushState(null, null, window.location.href);
-    window.onpopstate = function() {
-      const user_check = currentUser();
-      if (!user_check || !user_check.emp_id) {
-        window.location.href = 'login.html';
+  } else if (path.endsWith('login.html') || path.endsWith('index.html') || path === '/') {
+    // If we're on login or index and already authenticated, bounce to dashboard
+    if (user && user.emp_id) {
+      if ((user.role || '').toLowerCase() === 'admin') {
+        window.location.replace('admin_dashboard.html');
       } else {
-        window.history.pushState(null, null, window.location.href);
+        window.location.replace('employee_dashboard.html');
       }
-    };
+    }
+    
+    // Prevent back button on login page
+    if (path.endsWith('login.html')) {
+        window.history.pushState(null, '', window.location.href);
+        window.onpopstate = function() {
+            window.history.pushState(null, '', window.location.href);
+        };
+    }
+  }
+}
+
+// Run immediately on script load
+enforceAuthImmediately();
+
+// Run again if the page is restored from the history cache (BFCache)
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    enforceAuthImmediately();
   }
 });
+
 
 // ── Prevent caching of authenticated pages ────────────────────────────────
 // This ensures browser doesn't cache sensitive pages

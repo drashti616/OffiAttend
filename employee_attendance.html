@@ -423,33 +423,43 @@
           .then(data => {
             if (data.success && data.metadata) {
               const m = data.metadata;
-              const entryLogs = data.logs.filter(log => log.action === 'ENTRY');
-              const exitLogs = data.logs.filter(log => log.action === 'EXIT');
+              const sortedLogs = data.logs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+              const entryLogs = sortedLogs.filter(log => log.action === 'ENTRY');
+              const exitLogs = sortedLogs.filter(log => log.action === 'EXIT');
+
+              let pairedHtml = '<div style="display: flex; gap: 20px;"><div style="flex: 1;"><h5 style="color: #16a34a; margin-bottom: 10px;">Entry Times</h5>';
+              let exitHtml = '<div style="flex: 1;"><h5 style="color: #dc2626; margin-bottom: 10px;">Exit Times</h5>';
+
+              if (entryLogs.length === 0) {
+                pairedHtml += '<p style="color: #999;">No entry scans</p>';
+              } else {
+                entryLogs.forEach((entry, index) => {
+                  pairedHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px;">${formatTime(entry.created_at)}</div>`;
+
+                  if (index < exitLogs.length) {
+                    exitHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">${formatTime(exitLogs[index].created_at)}</div>`;
+                  } else {
+                    exitHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; color: #999;">—</div>`;
+                  }
+                });
+              }
+
+              if (exitLogs.length > entryLogs.length) {
+                for (let i = entryLogs.length; i < exitLogs.length; i++) {
+                  pairedHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; color: #999;">—</div>`;
+                  exitHtml += `<div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">${formatTime(exitLogs[i].created_at)}</div>`;
+                }
+              }
+
+              if (entryLogs.length === 0 && exitLogs.length === 0) {
+                logsContainer.innerHTML = '<p style="color: #999;">No scan logs found</p>';
+                return;
+              }
+
+              pairedHtml += '</div>' + exitHtml + '</div>';
 
               logsContainer.innerHTML = `
-                <div style="margin-bottom:20px; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; background:rgba(255,255,255,0.5); padding:15px; border-radius:8px;">
-                  <div><small style="color:#64748b;display:block;">Department</small><strong>${m.department || '—'}</strong></div>
-                  <div><small style="color:#64748b;display:block;">Leave Status</small><strong>${m.leave_status}</strong></div>
-                  <div><small style="color:#64748b;display:block;">Locked</small><strong>${m.attendance_locked ? 'Yes' : 'No'}</strong></div>
-                </div>
-                <div style="display: flex; gap: 20px;">
-                  <div style="flex: 1;">
-                    <h5 style="color: #16a34a; margin-bottom: 10px;">Entry Times</h5>
-                    ${entryLogs.length > 0 ? entryLogs.map(log => `
-                      <div style="padding: 8px; margin-bottom: 5px; background: rgba(34, 197, 94, 0.1); border-radius: 4px;">
-                        ${formatTime(log.created_at)}
-                      </div>
-                    `).join('') : '<p style="color: #999;">No entry scans</p>'}
-                  </div>
-                  <div style="flex: 1;">
-                    <h5 style="color: #dc2626; margin-bottom: 10px;">Exit Times</h5>
-                    ${exitLogs.length > 0 ? exitLogs.map(log => `
-                      <div style="padding: 8px; margin-bottom: 5px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">
-                        ${formatTime(log.created_at)}
-                      </div>
-                    `).join('') : '<p style="color: #999;">No exit scans</p>'}
-                  </div>
-                </div>
+                ${pairedHtml}
               `;
             } else {
               logsContainer.innerHTML = '<p>No details found</p>';

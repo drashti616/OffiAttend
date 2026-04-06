@@ -284,34 +284,51 @@
             const logs = data.logs || [];
             
             if (logs.length === 0) {
-              logsContainer.innerHTML = '<p style="color:#999;">No scan logs found for this date.</p>';
+              logsContainer.innerHTML = '<p style="color:#999;">No scan logs found</p>';
               return;
             }
             
-            const entryLogs = logs.filter(l => l.action === 'ENTRY');
-            const exitLogs = logs.filter(l => l.action === 'EXIT');
+            // Sort logs by timestamp to ensure proper pairing
+            const sortedLogs = logs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            const entryLogs = sortedLogs.filter(l => l.action === 'ENTRY');
+            const exitLogs = sortedLogs.filter(l => l.action === 'EXIT');
 
-            logsContainer.innerHTML = `
-              <div style="display:flex;gap:20px;">
-                <div style="flex:1;">
-                  <h5 style="color:#16a34a;margin-bottom:10px;">📍 Entry Times</h5>
-                  ${entryLogs.length > 0
-                ? entryLogs.map(l => `<div style="padding:10px;margin-bottom:8px;background:rgba(34,197,94,0.15);border-left:3px solid #16a34a;border-radius:4px;font-weight:500;">${l.created_at || '—'}</div>`).join('')
-                : '<p style="color:#999;padding:10px;">No entry scans</p>'}
-                </div>
-                <div style="flex:1;">
-                  <h5 style="color:#dc2626;margin-bottom:10px;">📤 Exit Times</h5>
-                  ${exitLogs.length > 0
-                ? exitLogs.map(l => `<div style="padding:10px;margin-bottom:8px;background:rgba(239,68,68,0.15);border-left:3px solid #dc2626;border-radius:4px;font-weight:500;">${l.created_at || '—'}</div>`).join('')
-                : '<p style="color:#999;padding:10px;">No exit scans</p>'}
-                </div>
-              </div>`;
+            // Create paired display with entries and corresponding exits
+            let pairedHtml = '<div style="display:flex;gap:20px;"><div style="flex:1;"><h5 style="color:#16a34a;margin-bottom:10px;"> Entry Times</h5>';
+            let exitHtml = '<div style="flex:1;"><h5 style="color:#dc2626;margin-bottom:10px;">Exit Times</h5>';
+            
+            if (entryLogs.length === 0) {
+              pairedHtml += '<p style="color:#999;padding:10px;">No entry scans</p>';
+            } else {
+              entryLogs.forEach((entry, index) => {
+                pairedHtml += `<div style="padding:10px;margin-bottom:8px;background:rgba(34,197,94,0.15);border-left:3px solid #16a34a;border-radius:4px;font-weight:500;">${formatTime(entry.created_at)}</div>`;
+                
+                // Add corresponding exit or "-" if none exists
+                if (index < exitLogs.length) {
+                  exitHtml += `<div style="padding:10px;margin-bottom:8px;background:rgba(239,68,68,0.15);border-left:3px solid #dc2626;border-radius:4px;font-weight:500;">${formatTime(exitLogs[index].created_at)}</div>`;
+                } else {
+                  exitHtml += `<div style="padding:10px;margin-bottom:8px;background:rgba(239,68,68,0.15);border-left:3px solid #dc2626;border-radius:4px;font-weight:500;color:#999;">—</div>`;
+                }
+              });
+            }
+            
+            if (exitLogs.length > entryLogs.length) {
+              // Handle case where there are more exits than entries (shouldn't happen with new logic but just in case)
+              for (let i = entryLogs.length; i < exitLogs.length; i++) {
+                pairedHtml += `<div style="padding:10px;margin-bottom:8px;background:rgba(34,197,94,0.15);border-left:3px solid #16a34a;border-radius:4px;font-weight:500;color:#999;">—</div>`;
+                exitHtml += `<div style="padding:10px;margin-bottom:8px;background:rgba(239,68,68,0.15);border-left:3px solid #dc2626;border-radius:4px;font-weight:500;">${formatTime(exitLogs[i].created_at)}</div>`;
+              }
+            }
+            
+            pairedHtml += '</div>' + exitHtml + '</div>';
+
+            logsContainer.innerHTML = pairedHtml;
           } else {
-            logsContainer.innerHTML = `<p style="color:#dc2626;">Error: ${data.error || 'Unable to load details'}</p>`;
+            logsContainer.innerHTML = '<p style="color:#999;">No scans found</p>';
           }
         })
         .catch(err => {
-          logsContainer.innerHTML = `<p>Error loading scan logs: ${err.message}</p>`;
+          logsContainer.innerHTML = '<p style="color:#999;">No scans found</p>';
         });
     }
 

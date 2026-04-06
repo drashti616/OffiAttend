@@ -1345,7 +1345,7 @@ def recognize():
         # ── VALIDATE that the recognised emp_id actually exists in the DB ──
         val_conn = get_db()
         val_cursor = val_conn.cursor(dictionary=True)
-        val_cursor.execute("SELECT emp_id, full_name FROM employees WHERE emp_id = %s AND status = 'Active'", (emp_id,))
+        val_cursor.execute("SELECT emp_id, full_name, joining_date FROM employees WHERE emp_id = %s AND status = 'Active'", (emp_id,))
         validated_emp = val_cursor.fetchone()
         val_cursor.close()
         val_conn.close()
@@ -1359,7 +1359,21 @@ def recognize():
             except Exception as purge_err:
                 print(f"[RECOG] ⚠️ Could not purge embedding: {purge_err}")
             return jsonify({"success": False, "error": "❌ Face not recognised. Please register with the admin first."}), 200
-        
+
+        # ── JOINING DATE CHECK: block attendance before joining date ──────────
+        joining_date = validated_emp.get('joining_date')
+        if joining_date:
+            scan_date = datetime.now().date()
+            # joining_date may come as date or datetime
+            if hasattr(joining_date, 'date'):
+                joining_date = joining_date.date()
+            if scan_date < joining_date:
+                print(f"[RECOG] ⛔ {emp_id} joining date is {joining_date}, today is {scan_date} — attendance blocked")
+                return jsonify({
+                    "success": False,
+                    "error": f"⛔ Attendance cannot be recorded before joining date ({joining_date.strftime('%d %b %Y')})"
+                }), 200
+
         # CHECK SCAN COOLDOWN (10 minutes)
         is_in_cooldown, last_scan_time = check_scan_cooldown(emp_id, cooldown_minutes=10)
         if is_in_cooldown:
@@ -1385,14 +1399,22 @@ def recognize():
                 now_dt = datetime.now()
                 now_time = now_dt.time()
                 
-                # Determine ENTRY vs EXIT: check last scan today
+                # Determine ENTRY vs EXIT: alternate between ENTRY and EXIT, starting with ENTRY
                 cursor.execute("""
-                    SELECT action FROM attendance_logs 
-                    WHERE emp_id = %s AND DATE(att_date) = %s 
-                    ORDER BY created_at DESC LIMIT 1
+                    SELECT COUNT(*) as scan_count FROM attendance_logs 
+                    WHERE emp_id = %s AND DATE(att_date) = %s
                 """, (emp_id, today))
-                last_log = cursor.fetchone()
-                action = 'EXIT' if (last_log and last_log.get('action') == 'ENTRY') else 'ENTRY'
+                scan_count = cursor.fetchone()['scan_count']
+                
+                if scan_count == 0:
+                    # First scan of the day - ENTRY
+                    action = 'ENTRY'
+                elif scan_count % 2 == 0:
+                    # Even number of previous scans (0, 2, 4...) - ENTRY
+                    action = 'ENTRY'
+                else:
+                    # Odd number of previous scans (1, 3, 5...) - EXIT
+                    action = 'EXIT'
                 
                 # Insert into attendance_logs (att_date = exact scan datetime, created_at auto-set)
                 cursor.execute("""
@@ -1401,7 +1423,7 @@ def recognize():
                 """, (emp_id, now_dt, action))
                 log_id = cursor.lastrowid
                 
-                # Create or update attendance table (this is what dashboards read!)
+                # Create or update attendance table with first entry and last exit after last entry
                 cursor.execute("SELECT id, in_time, out_time FROM attendance WHERE emp_id=%s AND att_date=%s", (emp_id, today))
                 att_rec = cursor.fetchone()
                 
@@ -1420,7 +1442,7 @@ def recognize():
                 
                 if action == 'ENTRY':
                     if not att_rec:
-                        # Create new attendance record with first entry time
+                        # Create new attendance record with entry time
                         cursor.execute("""
                             INSERT INTO attendance (emp_id, att_date, in_time, status, is_late, leave_status, source, created_at)
                             VALUES (%s, %s, %s, %s, %s, %s, 'Camera', NOW())
@@ -1431,13 +1453,33 @@ def recognize():
                             UPDATE attendance SET in_time=%s, status=%s, is_late=%s, leave_status=%s
                             WHERE emp_id=%s AND att_date=%s
                         """, (now_time_str, new_status, is_late, leave_status, emp_id, today))
-                    # else: in_time already set, don't update it (ignore re-entry)
+                    # else: in_time already set, don't update it (keep first entry time)
                 else:
-                    # EXIT: always update out_time to the latest exit time
+                    # EXIT: update out_time only if this exit is after the last entry
+                    # Get the last entry time for this employee today
                     cursor.execute("""
-                        UPDATE attendance SET out_time=%s
-                        WHERE emp_id=%s AND att_date=%s
-                    """, (now_time_str, emp_id, today))
+                        SELECT created_at FROM attendance_logs 
+                        WHERE emp_id = %s AND DATE(att_date) = %s AND action = 'ENTRY'
+                        ORDER BY created_at DESC LIMIT 1
+                    """, (emp_id, today))
+                    last_entry_result = cursor.fetchone()
+                    
+                    if last_entry_result:
+                        last_entry_time = last_entry_result['created_at']
+                        if now_dt >= last_entry_time:
+                            # This exit is after the last entry, update out_time
+                            if not att_rec:
+                                # Create attendance record with out_time only (rare case)
+                                cursor.execute("""
+                                    INSERT INTO attendance (emp_id, att_date, out_time, status, leave_status, source, created_at)
+                                    VALUES (%s, %s, %s, %s, %s, 'Camera', NOW())
+                                """, (emp_id, today, now_time_str, STATUS_PRESENT, leave_status))
+                            else:
+                                # Update out_time to this exit time
+                                cursor.execute("""
+                                    UPDATE attendance SET out_time=%s
+                                    WHERE emp_id=%s AND att_date=%s
+                                """, (now_time_str, emp_id, today))
                 
                 conn.commit()
                 cursor.close()
@@ -1502,7 +1544,7 @@ def mark_attendance():
             cursor.close(); conn.close()
             return jsonify({"success": False, "error": "Admin accounts cannot mark attendance"}), 403
 
-        cursor.execute("SELECT emp_id, full_name FROM employees WHERE emp_id=%s", (emp_id,))
+        cursor.execute("SELECT emp_id, full_name, joining_date FROM employees WHERE emp_id=%s", (emp_id,))
         emp = cursor.fetchone()
         if not emp:
             cursor.close(); conn.close()
@@ -1511,6 +1553,17 @@ def mark_attendance():
         today    = datetime.now().date()
         now_time = datetime.now().time()
         now_str  = now_time.strftime("%H:%M:%S")
+
+        # ── JOINING DATE CHECK: block attendance before joining date ──────────
+        joining_date = emp.get('joining_date')
+        if joining_date:
+            jd = joining_date.date() if hasattr(joining_date, 'date') else joining_date
+            if today < jd:
+                cursor.close(); conn.close()
+                return jsonify({
+                    "success": False,
+                    "error": f"⛔ Attendance cannot be recorded before joining date ({jd.strftime('%d %b %Y')})"
+                }), 403
 
         # ── CHECK ATTENDANCE MARKING WINDOW ────────────────────────────────────
         from attendance_config import ATTENDANCE_MARKING_START, ATTENDANCE_MARKING_END
@@ -1789,7 +1842,8 @@ def get_attendance():
         if date:
             sql += " AND a.att_date=%s"; args.append(date)
         elif month:
-            sql += " AND a.att_date LIKE %s"; args.append(month+"%")
+            # Use DATE_FORMAT for robust month matching (e.g., '2026-03')
+            sql += " AND DATE_FORMAT(a.att_date, '%Y-%m') = %s"; args.append(month)
         sql += " ORDER BY a.att_date DESC, a.in_time DESC"
 
         cursor.execute(sql, args)
@@ -2782,19 +2836,35 @@ def initialize_scheduler():
 if __name__ == "__main__":
     print("🚀 Starting Face Recognition Attendance System...")
     
-    # Clean up any duplicate attendance records on startup
+    # 1. Clean up any duplicate attendance records on startup
     print("🧹 Cleaning up duplicate attendance records...")
-    cleanup_result = cleanup_duplicate_attendance()
+    cleanup_duplicate_attendance()
     
-    # Update attendance status based on current scan times
+    # 2. Update attendance status based on current scan times
     print("📊 Updating attendance status...")
-    status_result = update_attendance_status()
+    update_attendance_status()
     
-    # Initialize enhanced attendance system with status automation
+    # 3. Initialize enhanced attendance system with status automation
     initialize_enhanced_attendance(app)
     
-    # The enhanced scheduler handles all slot generation and finalization
-    # No need for the old scheduler
+    # 4. ── STARTUP CATCHUP ────────────────────────────────────────────────────
+    # This specifically addresses the user's issue with missed days and 'Pending' status
+    print("🔄 Running startup catch-up (finalizing past days)...")
+    try:
+        conn = get_db()
+        catchup_engine = EnhancedAttendanceEngine(conn)
+        
+        # Backfill missing slots for the last 7 days (Today is skipped if < 9:45 AM)
+        res_gen = catchup_engine.auto_generate_missing_records()
+        # Finalize all pending past days
+        res_fin = catchup_engine.finalize_daily_attendance()
+        
+        conn.close()
+        print(f"✅ Catch-up complete! Slots generated for: {res_gen.get('dates_processed', 'None')}")
+        print(f"✅ Finalized dates: {res_fin.get('dates_processed', 'None')}")
+    except Exception as e:
+        print(f"⚠️ Catch-up failed (non-fatal): {e}")
+    # ──────────────────────────────────────────────────────────────────────────
     
     print("✅ System ready! Starting server on port 5000...")
     app.run(debug=True, host='0.0.0.0', port=5000)
