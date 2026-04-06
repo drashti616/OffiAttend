@@ -55,7 +55,7 @@ AI Enabled Face Recognition Attendance Management System/
 ├── components/
 │   └── sidebar.html                        # Reusable sidebar component
 ├── database sql/
-│   └── office_attendance.sql               # Complete database schema
+│   └── database_schema.sql                 # Complete database schema
 ├── *.html                                  # HTML pages (13 pages)
 ├── .gitignore                              # Git ignore rules
 └── README.md                               # This file
@@ -87,7 +87,7 @@ pip install -r backend/requirements.txt
 ### Step 3: Setup Database
 ```bash
 # Create database and tables
-mysql -u root -p < "database sql/office_attendance.sql"
+mysql -u root -p < "database sql/database_schema.sql"
 ```
 
 ### Step 4: Configure Database Connection
@@ -282,7 +282,7 @@ Error: Can't connect to MySQL server
 - Verify MySQL is running
 - Check credentials in `attendance_config.py`
 - Ensure database `office_attendance` exists
-- Run: `mysql -u root -p < "database sql/office_attendance.sql"`
+- Run: `mysql -u root -p < "database sql/database_schema.sql"`
 
 ### Port Already in Use
 ```
@@ -354,7 +354,7 @@ Key tables:
 - `leave_applications` - Leave requests
 - `admins` - Admin accounts
 
-See `database sql/office_attendance.sql` for complete schema.
+See `database sql/database_schema.sql` for complete schema.
 
 ## 🔐 Security Features
 
