@@ -38,12 +38,11 @@ AI Enabled Face Recognition Attendance Management System/
 │   ├── face_recognizer_insightface.py      # Face recognition engine
 │   ├── attendance_migration.py             # Database migrations
 │   ├── requirements.txt                    # Python dependencies
-│   ├── README.md                           # Backend documentation
+│   ├── verify_face_recognition.py          # Verification file
 │   └── static/                             # Static files
 ├── faces/
 │   ├── images/                             # Employee face photos for recognition
-│   ├── uploads/                            # Uploaded employee photos
-│   └── backup/                             # Backup photos
+│   └── uploads/                            # Uploaded employee photosoyee photos
 ├── css/
 │   ├── styles.css                          # Main styles
 │   └── responsive.css                      # Responsive design (2000+ lines)
@@ -228,15 +227,8 @@ Approved Leave = Leave
 ### Face Recognition
 - Uses InsightFace with ArcFace embeddings
 - Automatic face detection and alignment
-- Confidence-based matching (threshold: 0.5)
+- Confidence-based matching (threshold: 0.55)
 - 10-minute scan cooldown to prevent duplicates
-
-### Responsive Design
-- Mobile-first approach
-- 6 breakpoints: 480px, 576px, 768px, 992px, 1200px, 1400px
-- Touch-friendly buttons (44px minimum)
-- Horizontal scroll for tables on mobile
-- Flexible layouts using Flexbox and CSS Grid
 
 ### Leave Management
 - Employees apply for leave with reason
