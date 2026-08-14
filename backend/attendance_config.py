@@ -17,13 +17,6 @@ STATUS_LEAVE = "Leave"
 STATUS_ABSENT = "Absent"
 STATUS_PENDING = "Pending"
 
-DB_CFG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "",
-    "database": "office_attendance"
-}
-
 # Log types
 LOG_ENTRY = "ENTRY"
 LOG_EXIT = "EXIT"
@@ -33,5 +26,11 @@ TABLE_ATTENDANCE_LOGS = "attendance_logs"
 TABLE_ATTENDANCE = "attendance"
 
 # Database configuration
-DB_CFG = dict(host="localhost", port=3306, user="root", password="", database="office_attendance")
-
+# CHANGE THESE VALUES WITH YOUR OWN LOCAL OR PRODUCTION DATABASE CREDENTIALS
+DB_CFG = dict(
+    host="YOUR_DATABASE_HOST",          # e.g., "localhost"
+    port=3306,                          # Your MySQL port
+    user="YOUR_DATABASE_USER",          # e.g., "root"
+    password="YOUR_DATABASE_PASSWORD",  # Insert your database password here
+    database="YOUR_DATABASE_NAME"       # e.g., "office_attendance"
+)
